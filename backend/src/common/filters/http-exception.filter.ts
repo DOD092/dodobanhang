@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { mapDatabaseError } from './database-error.mapper';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -13,6 +14,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+
+    // Lỗi ràng buộc DB (FK, unique, check...) phải là 4xx chứ không phải 500
+    const databaseError = mapDatabaseError(exception);
+    if (databaseError) {
+      response.status(databaseError.statusCode).json({
+        ...databaseError,
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      });
+      return;
+    }
 
     const isHttpException = exception instanceof HttpException;
     const statusCode = isHttpException
