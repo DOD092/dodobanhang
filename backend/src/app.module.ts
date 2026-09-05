@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm'; // Thêm dòng này
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { HealthController } from './health.controller';
@@ -29,16 +29,19 @@ import { WarehouseModule } from './module/warehouse/warehouse.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Cấu hình kết nối TypeORM tới PostgreSQL
+    // Cấu hình kết nối TypeORM tới PostgreSQL trên Aiven (Cloud)
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'dodobanhang',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '28091', 10), // Chuyển chuỗi từ .env thành số nguyên
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
       autoLoadEntities: true,
       synchronize: true, // Bật tính năng Code-First để tự động tạo bảng
+      ssl: {
+        rejectUnauthorized: false, // BẮT BUỘC: Cho phép NestJS kết nối bảo mật với Aiven
+      },
     }),
     // Người dùng & phân quyền
     UserModule,
