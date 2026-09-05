@@ -23,7 +23,7 @@ export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new address' })
+  @ApiOperation({ summary: 'Create a new Address' })
   create(@Body() dto: CreateAddressDto) {
     return this.addressService.create(dto);
   }
@@ -35,14 +35,14 @@ export class AddressController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get an address by id' })
+  @ApiOperation({ summary: 'Get a Address by id' })
   @ApiParam({ name: 'id', format: 'uuid' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.addressService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an address' })
+  @ApiOperation({ summary: 'Update a Address' })
   @ApiParam({ name: 'id', format: 'uuid' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -53,7 +53,7 @@ export class AddressController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete an address' })
+  @ApiOperation({ summary: 'Delete a Address' })
   @ApiParam({ name: 'id', format: 'uuid' })
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.addressService.remove(id);

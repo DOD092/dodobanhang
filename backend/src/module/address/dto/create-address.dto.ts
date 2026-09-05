@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateAddressDto {
@@ -12,48 +13,54 @@ export class CreateAddressDto {
   @IsUUID()
   userId: string;
 
-  @ApiProperty()
-  @IsString()
+  @ApiProperty({ maxLength: 150 })
   @IsNotEmpty()
-  recipientName: string;
+  @IsString()
+  @MaxLength(150)
+  receiverName: string;
+
+  @ApiProperty({ maxLength: 20 })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(20)
+  receiverPhone: string;
 
   @ApiProperty()
-  @IsString()
   @IsNotEmpty()
-  phone: string;
-
-  @ApiProperty()
   @IsString()
-  @IsNotEmpty()
-  street: string;
+  addressLine: string;
 
-  @ApiPropertyOptional()
+  @ApiProperty({ maxLength: 100 })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  ward: string;
+
+  @ApiProperty({ maxLength: 100 })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  district: string;
+
+  @ApiProperty({ maxLength: 100 })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  province: string;
+
+  @ApiProperty({ maxLength: 100, default: 'VN' })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(100)
+  country: string;
+
+  @ApiPropertyOptional({ maxLength: 20 })
   @IsOptional()
   @IsString()
-  ward?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  district?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  city: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
+  @MaxLength(20)
   postalCode?: string;
 
-  @ApiPropertyOptional({ default: 'VN' })
-  @IsOptional()
-  @IsString()
-  country?: string;
-
-  @ApiPropertyOptional({ default: false })
-  @IsOptional()
+  @ApiProperty({ default: false })
   @IsBoolean()
-  isDefault?: boolean;
+  isDefault: boolean;
 }
