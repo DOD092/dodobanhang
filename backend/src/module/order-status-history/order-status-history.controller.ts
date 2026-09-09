@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ORDER_STATUS_HISTORY_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { OrderStatusHistoryService } from './order-status-history.service';
 import { CreateOrderStatusHistoryDto } from './dto/create-order-status-history.dto';
 import { UpdateOrderStatusHistoryDto } from './dto/update-order-status-history.dto';
+import { IOrderStatusHistoryService } from './interface/order-status-history-service.interface';
 
 @ApiTags('order-status-history')
 @Controller('order-status-history')
 export class OrderStatusHistoryController {
-  constructor(private readonly orderStatusHistoryService: OrderStatusHistoryService) {}
+  constructor(
+    @Inject(ORDER_STATUS_HISTORY_SERVICE)
+    private readonly orderStatusHistoryService: IOrderStatusHistoryService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new OrderStatusHistory' })

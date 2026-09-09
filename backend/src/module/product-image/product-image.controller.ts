@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { PRODUCT_IMAGE_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { ProductImageService } from './product-image.service';
 import { CreateProductImageDto } from './dto/create-product-image.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
+import { IProductImageService } from './interface/product-image-service.interface';
 
 @ApiTags('product-images')
 @Controller('product-images')
 export class ProductImageController {
-  constructor(private readonly productImageService: ProductImageService) {}
+  constructor(
+    @Inject(PRODUCT_IMAGE_SERVICE)
+    private readonly productImageService: IProductImageService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new ProductImage' })

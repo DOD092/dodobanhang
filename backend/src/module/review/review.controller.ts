@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { REVIEW_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { IReviewService } from './interface/review-service.interface';
 
 @ApiTags('reviews')
 @Controller('reviews')
 export class ReviewController {
-  constructor(private readonly reviewService: ReviewService) {}
+  constructor(
+    @Inject(REVIEW_SERVICE) private readonly reviewService: IReviewService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Review' })
@@ -44,10 +48,7 @@ export class ReviewController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a Review' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateReviewDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateReviewDto) {
     return this.reviewService.update(id, dto);
   }
 

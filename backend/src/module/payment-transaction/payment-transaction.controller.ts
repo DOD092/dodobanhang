@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { PAYMENT_TRANSACTION_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { PaymentTransactionService } from './payment-transaction.service';
 import { CreatePaymentTransactionDto } from './dto/create-payment-transaction.dto';
 import { UpdatePaymentTransactionDto } from './dto/update-payment-transaction.dto';
+import { IPaymentTransactionService } from './interface/payment-transaction-service.interface';
 
 @ApiTags('payment-transactions')
 @Controller('payment-transactions')
 export class PaymentTransactionController {
-  constructor(private readonly paymentTransactionService: PaymentTransactionService) {}
+  constructor(
+    @Inject(PAYMENT_TRANSACTION_SERVICE)
+    private readonly paymentTransactionService: IPaymentTransactionService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new PaymentTransaction' })

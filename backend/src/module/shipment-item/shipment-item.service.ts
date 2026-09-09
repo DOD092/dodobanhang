@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { SHIPMENT_ITEM_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateShipmentItemDto } from './dto/create-shipment-item.dto';
 import { UpdateShipmentItemDto } from './dto/update-shipment-item.dto';
 import { ShipmentItem } from './entities/shipment-item.entity';
+import { IShipmentItemRepository } from './interface/shipment-item-repository.interface';
+import { IShipmentItemService } from './interface/shipment-item-service.interface';
 
 @Injectable()
-export class ShipmentItemService {
+export class ShipmentItemService implements IShipmentItemService {
   constructor(
-    @InjectRepository(ShipmentItem)
-    private readonly shipmentItemRepository: Repository<ShipmentItem>,
+    @Inject(SHIPMENT_ITEM_REPOSITORY)
+    private readonly shipmentItemRepository: IShipmentItemRepository,
   ) {}
 
-  async create(dto: CreateShipmentItemDto): Promise<ShipmentItem> {
-    const entity = this.shipmentItemRepository.create(dto);
-    return await this.shipmentItemRepository.save(entity);
+  create(dto: CreateShipmentItemDto): Promise<ShipmentItem> {
+    return this.shipmentItemRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<ShipmentItem[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.shipmentItemRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<ShipmentItem[]> {
+    return this.shipmentItemRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<ShipmentItem> {
-    const entity = await this.shipmentItemRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`ShipmentItem ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<ShipmentItem> {
+    return this.shipmentItemRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateShipmentItemDto): Promise<ShipmentItem> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.shipmentItemRepository.save(entity);
+  update(id: string, dto: UpdateShipmentItemDto): Promise<ShipmentItem> {
+    return this.shipmentItemRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.shipmentItemRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.shipmentItemRepository.remove(id);
   }
 }

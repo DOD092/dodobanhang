@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { CART_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { CartService } from './cart.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
+import { ICartService } from './interface/cart-service.interface';
 
 @ApiTags('carts')
 @Controller('carts')
 export class CartController {
-  constructor(private readonly cartService: CartService) {}
+  constructor(
+    @Inject(CART_SERVICE) private readonly cartService: ICartService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Cart' })
@@ -44,10 +48,7 @@ export class CartController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a Cart' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateCartDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCartDto) {
     return this.cartService.update(id, dto);
   }
 

@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { PRODUCT_IMAGE_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateProductImageDto } from './dto/create-product-image.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
 import { ProductImage } from './entities/product-image.entity';
+import { IProductImageRepository } from './interface/product-image-repository.interface';
+import { IProductImageService } from './interface/product-image-service.interface';
 
 @Injectable()
-export class ProductImageService {
+export class ProductImageService implements IProductImageService {
   constructor(
-    @InjectRepository(ProductImage)
-    private readonly productImageRepository: Repository<ProductImage>,
+    @Inject(PRODUCT_IMAGE_REPOSITORY)
+    private readonly productImageRepository: IProductImageRepository,
   ) {}
 
-  async create(dto: CreateProductImageDto): Promise<ProductImage> {
-    const entity = this.productImageRepository.create(dto);
-    return await this.productImageRepository.save(entity);
+  create(dto: CreateProductImageDto): Promise<ProductImage> {
+    return this.productImageRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<ProductImage[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.productImageRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<ProductImage[]> {
+    return this.productImageRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<ProductImage> {
-    const entity = await this.productImageRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`ProductImage ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<ProductImage> {
+    return this.productImageRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateProductImageDto): Promise<ProductImage> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.productImageRepository.save(entity);
+  update(id: string, dto: UpdateProductImageDto): Promise<ProductImage> {
+    return this.productImageRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.productImageRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.productImageRepository.remove(id);
   }
 }

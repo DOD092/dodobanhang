@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { PRODUCT_VARIANT_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { ProductVariantService } from './product-variant.service';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
+import { IProductVariantService } from './interface/product-variant-service.interface';
 
 @ApiTags('product-variants')
 @Controller('product-variants')
 export class ProductVariantController {
-  constructor(private readonly productVariantService: ProductVariantService) {}
+  constructor(
+    @Inject(PRODUCT_VARIANT_SERVICE)
+    private readonly productVariantService: IProductVariantService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new ProductVariant' })

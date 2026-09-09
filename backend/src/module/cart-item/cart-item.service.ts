@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { CART_ITEM_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateCartItemDto } from './dto/create-cart-item.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { CartItem } from './entities/cart-item.entity';
+import { ICartItemRepository } from './interface/cart-item-repository.interface';
+import { ICartItemService } from './interface/cart-item-service.interface';
 
 @Injectable()
-export class CartItemService {
+export class CartItemService implements ICartItemService {
   constructor(
-    @InjectRepository(CartItem)
-    private readonly cartItemRepository: Repository<CartItem>,
+    @Inject(CART_ITEM_REPOSITORY)
+    private readonly cartItemRepository: ICartItemRepository,
   ) {}
 
-  async create(dto: CreateCartItemDto): Promise<CartItem> {
-    const entity = this.cartItemRepository.create(dto);
-    return await this.cartItemRepository.save(entity);
+  create(dto: CreateCartItemDto): Promise<CartItem> {
+    return this.cartItemRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<CartItem[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.cartItemRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<CartItem[]> {
+    return this.cartItemRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<CartItem> {
-    const entity = await this.cartItemRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`CartItem ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<CartItem> {
+    return this.cartItemRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateCartItemDto): Promise<CartItem> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.cartItemRepository.save(entity);
+  update(id: string, dto: UpdateCartItemDto): Promise<CartItem> {
+    return this.cartItemRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.cartItemRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.cartItemRepository.remove(id);
   }
 }

@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { ORDER_VOUCHER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateOrderVoucherDto } from './dto/create-order-voucher.dto';
 import { UpdateOrderVoucherDto } from './dto/update-order-voucher.dto';
 import { OrderVoucher } from './entities/order-voucher.entity';
+import { IOrderVoucherRepository } from './interface/order-voucher-repository.interface';
+import { IOrderVoucherService } from './interface/order-voucher-service.interface';
 
 @Injectable()
-export class OrderVoucherService {
+export class OrderVoucherService implements IOrderVoucherService {
   constructor(
-    @InjectRepository(OrderVoucher)
-    private readonly orderVoucherRepository: Repository<OrderVoucher>,
+    @Inject(ORDER_VOUCHER_REPOSITORY)
+    private readonly orderVoucherRepository: IOrderVoucherRepository,
   ) {}
 
-  async create(dto: CreateOrderVoucherDto): Promise<OrderVoucher> {
-    const entity = this.orderVoucherRepository.create(dto);
-    return await this.orderVoucherRepository.save(entity);
+  create(dto: CreateOrderVoucherDto): Promise<OrderVoucher> {
+    return this.orderVoucherRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<OrderVoucher[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.orderVoucherRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<OrderVoucher[]> {
+    return this.orderVoucherRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<OrderVoucher> {
-    const entity = await this.orderVoucherRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`OrderVoucher ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<OrderVoucher> {
+    return this.orderVoucherRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateOrderVoucherDto): Promise<OrderVoucher> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.orderVoucherRepository.save(entity);
+  update(id: string, dto: UpdateOrderVoucherDto): Promise<OrderVoucher> {
+    return this.orderVoucherRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.orderVoucherRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.orderVoucherRepository.remove(id);
   }
 }
