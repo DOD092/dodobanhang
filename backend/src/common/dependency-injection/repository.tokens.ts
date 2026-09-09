@@ -1,0 +1,34 @@
+// Token DI cho lớp Repository của mọi module — dùng để bind interface
+// (IxxxRepository) với class cụ thể trong providers của từng *.module.ts, và
+// để Service inject qua @Inject(...) thay vì phụ thuộc trực tiếp vào class.
+export const ADDRESS_REPOSITORY = Symbol('ADDRESS_REPOSITORY');
+export const ADMIN_REPOSITORY = Symbol('ADMIN_REPOSITORY');
+export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');
+export const CART_REPOSITORY = Symbol('CART_REPOSITORY');
+export const CART_ITEM_REPOSITORY = Symbol('CART_ITEM_REPOSITORY');
+export const CATEGORY_REPOSITORY = Symbol('CATEGORY_REPOSITORY');
+export const CUSTOMER_REPOSITORY = Symbol('CUSTOMER_REPOSITORY');
+export const INVENTORY_REPOSITORY = Symbol('INVENTORY_REPOSITORY');
+export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');
+export const ORDER_ITEM_REPOSITORY = Symbol('ORDER_ITEM_REPOSITORY');
+export const ORDER_STATUS_HISTORY_REPOSITORY = Symbol(
+  'ORDER_STATUS_HISTORY_REPOSITORY',
+);
+export const ORDER_VOUCHER_REPOSITORY = Symbol('ORDER_VOUCHER_REPOSITORY');
+export const PAYMENT_REPOSITORY = Symbol('PAYMENT_REPOSITORY');
+export const PAYMENT_TRANSACTION_REPOSITORY = Symbol(
+  'PAYMENT_TRANSACTION_REPOSITORY',
+);
+export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
+export const PRODUCT_IMAGE_REPOSITORY = Symbol('PRODUCT_IMAGE_REPOSITORY');
+export const PRODUCT_VARIANT_REPOSITORY = Symbol('PRODUCT_VARIANT_REPOSITORY');
+export const REVIEW_REPOSITORY = Symbol('REVIEW_REPOSITORY');
+export const ROLE_REPOSITORY = Symbol('ROLE_REPOSITORY');
+export const SHIPMENT_REPOSITORY = Symbol('SHIPMENT_REPOSITORY');
+export const SHIPMENT_ITEM_REPOSITORY = Symbol('SHIPMENT_ITEM_REPOSITORY');
+export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
+export const VOUCHER_REPOSITORY = Symbol('VOUCHER_REPOSITORY');
+export const WAREHOUSE_REPOSITORY = Symbol('WAREHOUSE_REPOSITORY');
+export const WAREHOUSE_OPERATOR_REPOSITORY = Symbol(
+  'WAREHOUSE_OPERATOR_REPOSITORY',
+);

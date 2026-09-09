@@ -1,65 +1,51 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { WAREHOUSE_OPERATOR_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateWarehouseOperatorDto } from './dto/create-warehouse-operator.dto';
 import { UpdateWarehouseOperatorDto } from './dto/update-warehouse-operator.dto';
 import { WarehouseOperator } from './entities/warehouse-operator.entity';
+import { IWarehouseOperatorRepository } from './interface/warehouse-operator-repository.interface';
+import { IWarehouseOperatorService } from './interface/warehouse-operator-service.interface';
 
 @Injectable()
-export class WarehouseOperatorService {
+export class WarehouseOperatorService implements IWarehouseOperatorService {
   constructor(
-    @InjectRepository(WarehouseOperator)
-    private readonly warehouseOperatorRepository: Repository<WarehouseOperator>,
+    @Inject(WAREHOUSE_OPERATOR_REPOSITORY)
+    private readonly warehouseOperatorRepository: IWarehouseOperatorRepository,
   ) {}
 
   async create(dto: CreateWarehouseOperatorDto): Promise<WarehouseOperator> {
     // Khoá chính do client truyền lên, mà save() với PK đã tồn tại sẽ thành
     // UPDATE — phải chặn trước để POST không âm thầm ghi đè bản ghi cũ.
-    const existing = await this.warehouseOperatorRepository.findOne({
-      where: { userId: dto.userId },
-    });
+    const existing = await this.warehouseOperatorRepository.findByUserId(
+      dto.userId,
+    );
 
     if (existing) {
-      throw new ConflictException(`WarehouseOperator ${dto.userId} already exists`);
+      throw new ConflictException(
+        `WarehouseOperator ${dto.userId} already exists`,
+      );
     }
 
-    const entity = this.warehouseOperatorRepository.create(dto);
-    return await this.warehouseOperatorRepository.save(entity);
+    return this.warehouseOperatorRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<WarehouseOperator[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.warehouseOperatorRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<WarehouseOperator[]> {
+    return this.warehouseOperatorRepository.findAll(pagination);
   }
 
-  async findOne(userId: string): Promise<WarehouseOperator> {
-    const entity = await this.warehouseOperatorRepository.findOne({ where: { userId } });
-
-    if (!entity) {
-      throw new NotFoundException(`WarehouseOperator ${userId} not found`);
-    }
-
-    return entity;
+  findOne(userId: string): Promise<WarehouseOperator> {
+    return this.warehouseOperatorRepository.findOne(userId);
   }
 
-  async update(userId: string, dto: UpdateWarehouseOperatorDto): Promise<WarehouseOperator> {
-    const entity = await this.findOne(userId);
-    Object.assign(entity, dto);
-    return await this.warehouseOperatorRepository.save(entity);
+  update(
+    userId: string,
+    dto: UpdateWarehouseOperatorDto,
+  ): Promise<WarehouseOperator> {
+    return this.warehouseOperatorRepository.update(userId, dto);
   }
 
-  async remove(userId: string): Promise<void> {
-    const entity = await this.findOne(userId);
-    await this.warehouseOperatorRepository.remove(entity);
+  remove(userId: string): Promise<void> {
+    return this.warehouseOperatorRepository.remove(userId);
   }
 }

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { BRAND_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
+import { IBrandService } from './interface/brand-service.interface';
 
 @ApiTags('brands')
 @Controller('brands')
 export class BrandController {
-  constructor(private readonly brandService: BrandService) {}
+  constructor(
+    @Inject(BRAND_SERVICE) private readonly brandService: IBrandService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Brand' })
@@ -44,10 +48,7 @@ export class BrandController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a Brand' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateBrandDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateBrandDto) {
     return this.brandService.update(id, dto);
   }
 

@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { SHIPMENT_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import { Shipment } from './entities/shipment.entity';
+import { IShipmentRepository } from './interface/shipment-repository.interface';
+import { IShipmentService } from './interface/shipment-service.interface';
 
 @Injectable()
-export class ShipmentService {
+export class ShipmentService implements IShipmentService {
   constructor(
-    @InjectRepository(Shipment)
-    private readonly shipmentRepository: Repository<Shipment>,
+    @Inject(SHIPMENT_REPOSITORY)
+    private readonly shipmentRepository: IShipmentRepository,
   ) {}
 
-  async create(dto: CreateShipmentDto): Promise<Shipment> {
-    const entity = this.shipmentRepository.create(dto);
-    return await this.shipmentRepository.save(entity);
+  create(dto: CreateShipmentDto): Promise<Shipment> {
+    return this.shipmentRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<Shipment[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.shipmentRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<Shipment[]> {
+    return this.shipmentRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<Shipment> {
-    const entity = await this.shipmentRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Shipment ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<Shipment> {
+    return this.shipmentRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateShipmentDto): Promise<Shipment> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.shipmentRepository.save(entity);
+  update(id: string, dto: UpdateShipmentDto): Promise<Shipment> {
+    return this.shipmentRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.shipmentRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.shipmentRepository.remove(id);
   }
 }

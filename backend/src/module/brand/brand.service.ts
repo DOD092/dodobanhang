@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { BRAND_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { Brand } from './entities/brand.entity';
+import { IBrandRepository } from './interface/brand-repository.interface';
+import { IBrandService } from './interface/brand-service.interface';
 
 @Injectable()
-export class BrandService {
+export class BrandService implements IBrandService {
   constructor(
-    @InjectRepository(Brand)
-    private readonly brandRepository: Repository<Brand>,
+    @Inject(BRAND_REPOSITORY)
+    private readonly brandRepository: IBrandRepository,
   ) {}
 
-  async create(dto: CreateBrandDto): Promise<Brand> {
-    const entity = this.brandRepository.create(dto);
-    return await this.brandRepository.save(entity);
+  create(dto: CreateBrandDto): Promise<Brand> {
+    return this.brandRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<Brand[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.brandRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<Brand[]> {
+    return this.brandRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<Brand> {
-    const entity = await this.brandRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Brand ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<Brand> {
+    return this.brandRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateBrandDto): Promise<Brand> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.brandRepository.save(entity);
+  update(id: string, dto: UpdateBrandDto): Promise<Brand> {
+    return this.brandRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.brandRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.brandRepository.remove(id);
   }
 }

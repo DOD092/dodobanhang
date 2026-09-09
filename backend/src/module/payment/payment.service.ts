@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { PAYMENT_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { Payment } from './entities/payment.entity';
+import { IPaymentRepository } from './interface/payment-repository.interface';
+import { IPaymentService } from './interface/payment-service.interface';
 
 @Injectable()
-export class PaymentService {
+export class PaymentService implements IPaymentService {
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
+    @Inject(PAYMENT_REPOSITORY)
+    private readonly paymentRepository: IPaymentRepository,
   ) {}
 
-  async create(dto: CreatePaymentDto): Promise<Payment> {
-    const entity = this.paymentRepository.create(dto);
-    return await this.paymentRepository.save(entity);
+  create(dto: CreatePaymentDto): Promise<Payment> {
+    return this.paymentRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<Payment[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.paymentRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<Payment[]> {
+    return this.paymentRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<Payment> {
-    const entity = await this.paymentRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Payment ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<Payment> {
+    return this.paymentRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdatePaymentDto): Promise<Payment> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.paymentRepository.save(entity);
+  update(id: string, dto: UpdatePaymentDto): Promise<Payment> {
+    return this.paymentRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.paymentRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.paymentRepository.remove(id);
   }
 }

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ROLE_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { IRoleService } from './interface/role-service.interface';
 
 @ApiTags('roles')
 @Controller('roles')
 export class RoleController {
-  constructor(private readonly roleService: RoleService) {}
+  constructor(
+    @Inject(ROLE_SERVICE) private readonly roleService: IRoleService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Role' })
@@ -44,10 +48,7 @@ export class RoleController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a Role' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateRoleDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateRoleDto) {
     return this.roleService.update(id, dto);
   }
 

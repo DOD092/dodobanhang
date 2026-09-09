@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { ORDER_ITEM_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
 import { OrderItem } from './entities/order-item.entity';
+import { IOrderItemRepository } from './interface/order-item-repository.interface';
+import { IOrderItemService } from './interface/order-item-service.interface';
 
 @Injectable()
-export class OrderItemService {
+export class OrderItemService implements IOrderItemService {
   constructor(
-    @InjectRepository(OrderItem)
-    private readonly orderItemRepository: Repository<OrderItem>,
+    @Inject(ORDER_ITEM_REPOSITORY)
+    private readonly orderItemRepository: IOrderItemRepository,
   ) {}
 
-  async create(dto: CreateOrderItemDto): Promise<OrderItem> {
-    const entity = this.orderItemRepository.create(dto);
-    return await this.orderItemRepository.save(entity);
+  create(dto: CreateOrderItemDto): Promise<OrderItem> {
+    return this.orderItemRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<OrderItem[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.orderItemRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<OrderItem[]> {
+    return this.orderItemRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<OrderItem> {
-    const entity = await this.orderItemRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`OrderItem ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<OrderItem> {
+    return this.orderItemRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateOrderItemDto): Promise<OrderItem> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.orderItemRepository.save(entity);
+  update(id: string, dto: UpdateOrderItemDto): Promise<OrderItem> {
+    return this.orderItemRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.orderItemRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.orderItemRepository.remove(id);
   }
 }
