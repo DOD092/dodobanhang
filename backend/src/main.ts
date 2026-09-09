@@ -29,10 +29,14 @@ async function bootstrap() {
     .setVersion('0.0.1')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDocument);
+  SwaggerModule.setup('/swagger/index.html', app, swaggerDocument, {
+    jsonDocumentUrl: '/swagger-json',
+  });
 
   const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
+  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Swagger UI available at http://localhost:${port}/swagger/index.html`);
 }
 
 void bootstrap();
