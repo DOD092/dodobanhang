@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
@@ -14,6 +18,16 @@ export class AdminService {
   ) {}
 
   async create(dto: CreateAdminDto): Promise<Admin> {
+    // Khoá chính do client truyền lên, mà save() với PK đã tồn tại sẽ thành
+    // UPDATE — phải chặn trước để POST không âm thầm ghi đè bản ghi cũ.
+    const existing = await this.adminRepository.findOne({
+      where: { userId: dto.userId },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Admin ${dto.userId} already exists`);
+    }
+
     const entity = this.adminRepository.create(dto);
     return await this.adminRepository.save(entity);
   }

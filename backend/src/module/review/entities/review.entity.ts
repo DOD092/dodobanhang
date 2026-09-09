@@ -1,10 +1,12 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { OrderItem } from '../../order-item/entities/order-item.entity';
@@ -12,6 +14,8 @@ import { Product } from '../../product/entities/product.entity';
 import { User } from '../../user/entities/user.entity';
 
 @Entity('reviews')
+@Unique(['orderItemId'])
+@Check(`"rating" BETWEEN 1 AND 5`)
 export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;

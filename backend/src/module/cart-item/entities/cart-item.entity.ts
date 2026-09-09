@@ -1,10 +1,12 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { numericTransformer } from '../../../common/transformers/numeric.transformer';
@@ -12,6 +14,8 @@ import { Cart } from '../../cart/entities/cart.entity';
 import { ProductVariant } from '../../product-variant/entities/product-variant.entity';
 
 @Entity('cart_items')
+@Unique(['cartId', 'variantId'])
+@Check(`"quantity" > 0`)
 export class CartItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
