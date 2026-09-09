@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { ADDRESS_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
+import { IAddressRepository } from './interface/address-repository.interface';
+import { IAddressService } from './interface/address-service.interface';
 
 @Injectable()
-export class AddressService {
+export class AddressService implements IAddressService {
   constructor(
-    @InjectRepository(Address)
-    private readonly addressRepository: Repository<Address>,
+    @Inject(ADDRESS_REPOSITORY)
+    private readonly addressRepository: IAddressRepository,
   ) {}
 
-  async create(dto: CreateAddressDto): Promise<Address> {
-    const entity = this.addressRepository.create(dto);
-    return await this.addressRepository.save(entity);
+  create(dto: CreateAddressDto): Promise<Address> {
+    return this.addressRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<Address[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.addressRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<Address[]> {
+    return this.addressRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<Address> {
-    const entity = await this.addressRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Address ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<Address> {
+    return this.addressRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateAddressDto): Promise<Address> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.addressRepository.save(entity);
+  update(id: string, dto: UpdateAddressDto): Promise<Address> {
+    return this.addressRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.addressRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.addressRepository.remove(id);
   }
 }

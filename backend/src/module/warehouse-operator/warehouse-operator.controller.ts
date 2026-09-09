@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { WAREHOUSE_OPERATOR_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { WarehouseOperatorService } from './warehouse-operator.service';
 import { CreateWarehouseOperatorDto } from './dto/create-warehouse-operator.dto';
 import { UpdateWarehouseOperatorDto } from './dto/update-warehouse-operator.dto';
+import { IWarehouseOperatorService } from './interface/warehouse-operator-service.interface';
 
 @ApiTags('warehouse-operators')
 @Controller('warehouse-operators')
 export class WarehouseOperatorController {
-  constructor(private readonly warehouseOperatorService: WarehouseOperatorService) {}
+  constructor(
+    @Inject(WAREHOUSE_OPERATOR_SERVICE)
+    private readonly warehouseOperatorService: IWarehouseOperatorService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new WarehouseOperator' })

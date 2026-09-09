@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ORDER_ITEM_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { OrderItemService } from './order-item.service';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
+import { IOrderItemService } from './interface/order-item-service.interface';
 
 @ApiTags('order-items')
 @Controller('order-items')
 export class OrderItemController {
-  constructor(private readonly orderItemService: OrderItemService) {}
+  constructor(
+    @Inject(ORDER_ITEM_SERVICE)
+    private readonly orderItemService: IOrderItemService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new OrderItem' })

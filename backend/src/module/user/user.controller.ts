@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { USER_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { IUserService } from './interface/user-service.interface';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    @Inject(USER_SERVICE) private readonly userService: IUserService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new User' })

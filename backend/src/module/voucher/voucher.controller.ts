@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { VOUCHER_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { VoucherService } from './voucher.service';
 import { CreateVoucherDto } from './dto/create-voucher.dto';
 import { UpdateVoucherDto } from './dto/update-voucher.dto';
+import { IVoucherService } from './interface/voucher-service.interface';
 
 @ApiTags('vouchers')
 @Controller('vouchers')
 export class VoucherController {
-  constructor(private readonly voucherService: VoucherService) {}
+  constructor(
+    @Inject(VOUCHER_SERVICE) private readonly voucherService: IVoucherService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Voucher' })

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ADMIN_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
+import { IAdminService } from './interface/admin-service.interface';
 
 @ApiTags('admins')
 @Controller('admins')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    @Inject(ADMIN_SERVICE) private readonly adminService: IAdminService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Admin' })

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,19 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { SHIPMENT_ITEM_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { ShipmentItemService } from './shipment-item.service';
 import { CreateShipmentItemDto } from './dto/create-shipment-item.dto';
 import { UpdateShipmentItemDto } from './dto/update-shipment-item.dto';
+import { IShipmentItemService } from './interface/shipment-item-service.interface';
 
 @ApiTags('shipment-items')
 @Controller('shipment-items')
 export class ShipmentItemController {
-  constructor(private readonly shipmentItemService: ShipmentItemService) {}
+  constructor(
+    @Inject(SHIPMENT_ITEM_SERVICE)
+    private readonly shipmentItemService: IShipmentItemService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new ShipmentItem' })

@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UnitOfWorkModule } from './common/unit-of-work/unit-of-work.module';
 import { getDatabaseConfig } from './config/database.config';
 import { HealthController } from './health.controller';
 import { AddressModule } from './module/address/address.module';
@@ -40,6 +41,7 @@ import { WarehouseOperatorModule } from './module/warehouse-operator/warehouse-o
       inject: [ConfigService],
       useFactory: getDatabaseConfig,
     }),
+    UnitOfWorkModule,
     // Người dùng & phân quyền
     RoleModule,
     UserModule,

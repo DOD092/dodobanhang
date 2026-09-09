@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -12,15 +13,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ADDRESS_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
-import { AddressService } from './address.service';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
+import { IAddressService } from './interface/address-service.interface';
 
 @ApiTags('addresses')
 @Controller('addresses')
 export class AddressController {
-  constructor(private readonly addressService: AddressService) {}
+  constructor(
+    @Inject(ADDRESS_SERVICE) private readonly addressService: IAddressService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new Address' })

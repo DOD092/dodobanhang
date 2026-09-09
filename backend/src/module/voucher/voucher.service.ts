@@ -1,51 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { VOUCHER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateVoucherDto } from './dto/create-voucher.dto';
 import { UpdateVoucherDto } from './dto/update-voucher.dto';
 import { Voucher } from './entities/voucher.entity';
+import { IVoucherRepository } from './interface/voucher-repository.interface';
+import { IVoucherService } from './interface/voucher-service.interface';
 
 @Injectable()
-export class VoucherService {
+export class VoucherService implements IVoucherService {
   constructor(
-    @InjectRepository(Voucher)
-    private readonly voucherRepository: Repository<Voucher>,
+    @Inject(VOUCHER_REPOSITORY)
+    private readonly voucherRepository: IVoucherRepository,
   ) {}
 
-  async create(dto: CreateVoucherDto): Promise<Voucher> {
-    const entity = this.voucherRepository.create(dto);
-    return await this.voucherRepository.save(entity);
+  create(dto: CreateVoucherDto): Promise<Voucher> {
+    return this.voucherRepository.create(dto);
   }
 
-  async findAll(pagination: PaginationQueryDto): Promise<Voucher[]> {
-    const { page, limit } = pagination;
-    const skip = (page - 1) * limit;
-
-    return await this.voucherRepository.find({
-      skip,
-      take: limit,
-    });
+  findAll(pagination: PaginationQueryDto): Promise<Voucher[]> {
+    return this.voucherRepository.findAll(pagination);
   }
 
-  async findOne(id: string): Promise<Voucher> {
-    const entity = await this.voucherRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Voucher ${id} not found`);
-    }
-
-    return entity;
+  findOne(id: string): Promise<Voucher> {
+    return this.voucherRepository.findOne(id);
   }
 
-  async update(id: string, dto: UpdateVoucherDto): Promise<Voucher> {
-    const entity = await this.findOne(id);
-    Object.assign(entity, dto);
-    return await this.voucherRepository.save(entity);
+  update(id: string, dto: UpdateVoucherDto): Promise<Voucher> {
+    return this.voucherRepository.update(id, dto);
   }
 
-  async remove(id: string): Promise<void> {
-    const entity = await this.findOne(id);
-    await this.voucherRepository.remove(entity);
+  remove(id: string): Promise<void> {
+    return this.voucherRepository.remove(id);
   }
 }
