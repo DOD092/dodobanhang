@@ -84,4 +84,9 @@ export class CreateOrderDto {
   @IsDate()
   @Type(() => Date)
   cancelledAt?: Date;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  orderAddress: string;
 }

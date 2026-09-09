@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserStatus } from '../../../common/enum/user-status.enum';
+import { Role } from '../../role/entities/role.entity';
 
 @Entity('users')
 export class User {
@@ -35,6 +38,13 @@ export class User {
 
   @Column({ type: 'varchar', length: 20, name: 'status' })
   status: UserStatus;
+
+  @Column({ type: 'uuid', name: 'role_id' })
+  roleId: string;
+
+  @ManyToOne(() => Role, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'role_id' })
+  role: Role;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

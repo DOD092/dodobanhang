@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { getDatabaseConfig } from './config/database.config';
 import { HealthController } from './health.controller';
 import { AddressModule } from './module/address/address.module';
 import { AdminModule } from './module/admin/admin.module';
 import { BrandModule } from './module/brand/brand.module';
 import { CartItemModule } from './module/cart-item/cart-item.module';
 import { CartModule } from './module/cart/cart.module';
+import { CustomerModule } from './module/customer/customer.module';
 import { CategoryModule } from './module/category/category.module';
 import { InventoryModule } from './module/inventory/inventory.module';
 import { OrderItemModule } from './module/order-item/order-item.module';
@@ -21,31 +23,29 @@ import { ProductImageModule } from './module/product-image/product-image.module'
 import { ProductVariantModule } from './module/product-variant/product-variant.module';
 import { ProductModule } from './module/product/product.module';
 import { ReviewModule } from './module/review/review.module';
+import { RoleModule } from './module/role/role.module';
+import { ShipmentItemModule } from './module/shipment-item/shipment-item.module';
 import { ShipmentModule } from './module/shipment/shipment.module';
 import { UserModule } from './module/user/user.module';
 import { VoucherModule } from './module/voucher/voucher.module';
 import { WarehouseModule } from './module/warehouse/warehouse.module';
+import { WarehouseOperatorModule } from './module/warehouse-operator/warehouse-operator.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // Cấu hình kết nối TypeORM tới PostgreSQL trên Aiven (Cloud)
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '28091', 10), // Chuyển chuỗi từ .env thành số nguyên
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE,
-      autoLoadEntities: true,
-      synchronize: true, // Bật tính năng Code-First để tự động tạo bảng
-      ssl: {
-        rejectUnauthorized: false, // BẮT BUỘC: Cho phép NestJS kết nối bảo mật với Aiven
-      },
+    // Cấu hình kết nối TypeORM — đọc từ .env qua src/config/database.config.ts
+    // (tự bật SSL khi host không phải localhost, vd. Postgres trên Aiven)
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: getDatabaseConfig,
     }),
     // Người dùng & phân quyền
+    RoleModule,
     UserModule,
+    CustomerModule,
     AdminModule,
+    WarehouseOperatorModule,
     AddressModule,
     // Danh mục sản phẩm
     CategoryModule,
@@ -64,6 +64,7 @@ import { WarehouseModule } from './module/warehouse/warehouse.module';
     OrderItemModule,
     OrderStatusHistoryModule,
     ShipmentModule,
+    ShipmentItemModule,
     // Thanh toán
     PaymentModule,
     PaymentTransactionModule,

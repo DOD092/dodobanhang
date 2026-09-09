@@ -68,6 +68,9 @@ export class Order {
   @Column({ type: 'timestamptz', name: 'cancelled_at', nullable: true })
   cancelledAt?: Date;
 
+  @Column({ type: 'text', name: 'order_address' })
+  orderAddress: string;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

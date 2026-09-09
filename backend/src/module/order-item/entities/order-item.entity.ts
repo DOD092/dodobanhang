@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   Entity,
   JoinColumn,
@@ -10,6 +11,7 @@ import { Order } from '../../order/entities/order.entity';
 import { ProductVariant } from '../../product-variant/entities/product-variant.entity';
 
 @Entity('order_items')
+@Check(`"quantity" > 0`)
 export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -5,12 +5,14 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { numericTransformer } from '../../../common/transformers/numeric.transformer';
 import { Order } from '../../order/entities/order.entity';
 import { Voucher } from '../../voucher/entities/voucher.entity';
 
 @Entity('order_vouchers')
+@Unique(['orderId', 'voucherId'])
 export class OrderVoucher {
   @PrimaryGeneratedColumn('uuid')
   id: string;
