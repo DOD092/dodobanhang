@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { UserStatus } from '../../../common/enum/user-status.enum';
@@ -56,4 +57,8 @@ export class CreateUserDto {
   @ApiProperty({ enum: UserStatus })
   @IsEnum(UserStatus)
   status: UserStatus;
+
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  roleId: string;
 }

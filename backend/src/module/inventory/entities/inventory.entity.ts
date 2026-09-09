@@ -4,12 +4,14 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { ProductVariant } from '../../product-variant/entities/product-variant.entity';
 import { Warehouse } from '../../warehouse/entities/warehouse.entity';
 
 @Entity('inventories')
+@Unique(['warehouseId', 'variantId'])
 export class Inventory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
