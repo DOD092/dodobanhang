@@ -18,26 +18,69 @@ File `../db_ecommerce.png` là bản CŨ, thiếu 4 bảng phân quyền — **�
 | Tên cột DB | **snake_case tường minh**: `@Column({ type, length, name: 'user_id' })` | Property TS vẫn camelCase; khai báo `name` để cột trong Postgres không phải quote |
 | Kiểu cột | Khai báo **type + length/precision đúng ERD** (`varchar(150)`, `numeric(18,2)`, `text`…) | Giữ đúng ràng buộc thiết kế, không để TypeORM tự đoán |
 | Quan hệ | **Cột uuid + `@ManyToOne` / `@JoinColumn`** → Postgres sinh FOREIGN KEY thật | Xem mục 3.1. Giữ cả cột uuid thô (`userId`) lẫn property quan hệ (`user`) để DTO không phải đổi |
-| Phạm vi mỗi bảng | **Full CRUD**: entity + create/update DTO + service + controller + module | Giống hệt khuôn mẫu `src/module/address` |
+| Phạm vi mỗi bảng | **Full CRUD** phân tầng: entity → repository → service → controller, ghép bằng DI token | Giống hệt khuôn mẫu `src/module/address`. Xem mục 1.1 |
 | Thời gian | `@CreateDateColumn` / `@UpdateDateColumn` kiểu `timestamptz`, cột `created_at` / `updated_at` | Timezone-aware; ERD chỉ ghi `timestamp` |
 | Tên bảng | Số nhiều: `users`, `products`, `addresses`… | ERD ghi bảng là `address`, ta dùng `addresses` cho nhất quán. Ngoại lệ: `order_status_history` giữ nguyên như ERD |
 | Tên thư mục module | Số ít, kebab-case: `product-variant/` | Theo mẫu `address/` |
 | Route API | Số nhiều, kebab-case: `/api/product-variants` | |
 
-### Khuôn mẫu một module (bắt buộc giống nhau)
+### 1.1. Khuôn mẫu một module (bắt buộc giống nhau)
+
+Kiến trúc phân tầng do Trung dựng (commit `9075d33 add base repo, uow, di`).
+Controller **không** gọi thẳng class Service, Service **không** gọi thẳng class
+Repository — tất cả đi qua **interface + DI token**, để sau này thay implementation
+hoặc mock khi viết test mà không phải sửa tầng gọi.
 
 ```
 src/module/<ten-module>/
-  <ten-module>.module.ts        # TypeOrmModule.forFeature([Entity]) -> dòng này sinh bảng
-  <ten-module>.controller.ts    # POST / GET (paginated) / GET :id / PATCH :id / DELETE :id
-  <ten-module>.service.ts       # create / findAll / findOne / update / remove
+  <ten-module>.module.ts                       # forFeature([Entity]) + bind token
+  <ten-module>.controller.ts                   # @Inject(<X>_SERVICE) -> I<X>Service
+  <ten-module>.service.ts                      # @Inject(<X>_REPOSITORY) -> I<X>Repository
+  <ten-module>.repository.ts                   # extends BaseRepository<Entity>
+  interface/<ten-module>-service.interface.ts
+  interface/<ten-module>-repository.interface.ts
   dto/create-<ten-module>.dto.ts
-  dto/update-<ten-module>.dto.ts # extends PartialType(Create...Dto)
+  dto/update-<ten-module>.dto.ts                # extends PartialType(Create...Dto)
   entities/<ten-module>.entity.ts
 ```
 
-Sau khi tạo module mới **phải** thêm nó vào mảng `imports` của `src/app.module.ts`,
-nếu không TypeORM sẽ không sinh bảng.
+Luồng phụ thuộc:
+
+```
+Controller --@Inject(ADDRESS_SERVICE)--> IAddressService
+                                             ^
+                                        AddressService --@Inject(ADDRESS_REPOSITORY)--> IAddressRepository
+                                                                                              ^
+                                                                          AddressRepository extends BaseRepository<Address>
+```
+
+Token khai báo sẵn cho cả 25 module trong
+`src/common/dependency-injection/{service,repository}.tokens.ts` (kiểu `Symbol`),
+và được bind trong `providers` của từng module:
+
+```ts
+providers: [
+  { provide: ADDRESS_SERVICE, useClass: AddressService },
+  { provide: ADDRESS_REPOSITORY, useClass: AddressRepository },
+],
+exports: [ADDRESS_SERVICE],   // export TOKEN, không export class
+```
+
+**Khi thêm module mới, đủ 4 bước:**
+
+1. Thêm token vào `service.tokens.ts` và `repository.tokens.ts`
+2. Viết 2 interface, repository kế thừa `BaseRepository`, service, controller
+3. Bind token trong `providers`, export token
+4. Thêm module vào mảng `imports` của `src/app.module.ts` — **thiếu bước này
+   TypeORM sẽ không sinh bảng**
+
+**Repository chỉ cần viết thêm khi có truy vấn riêng.** 5 thao tác CRUD đã nằm
+trong `BaseRepository`; class con thường chỉ có constructor gọi `super()`.
+Ví dụ `AdminRepository` thêm `findByUserId()` vì `admins` dùng khoá chính `userId`:
+
+```ts
+super(repository, 'Admin', 'userId');   // tham số 3 = tên cột khoá chính
+```
 
 ---
 
@@ -45,12 +88,39 @@ nếu không TypeORM sẽ không sinh bảng.
 
 | File | Công dụng |
 | --- | --- |
+| `src/common/repository/base.repository.ts` | Lớp CRUD trừu tượng (`create/findAll/findOne/update/remove`) cho mọi repository. Tham số 3 của `super()` đổi được cột khoá chính (`'userId'` cho 3 bảng profile) |
+| `src/common/dependency-injection/service.tokens.ts`<br>`src/common/dependency-injection/repository.tokens.ts` | Token `Symbol` cho cả 25 module, dùng để bind interface ↔ class. Xem mục 1.1 |
+| `src/common/unit-of-work/unit-of-work.ts` | Bọc 1 transaction cho nghiệp vụ ghi nhiều bảng. Xem mục 2.1 |
 | `src/common/transformers/numeric.transformer.ts` | Postgres `numeric` bị driver `pg` trả về **string**. Mọi cột tiền/khối lượng đều gắn `transformer: numericTransformer` để trả về `number` |
 | `src/common/dto/pagination-query.dto.ts` | `?page=&limit=` cho mọi endpoint `findAll` |
 | `src/common/enum/*.enum.ts` | Các enum lấy từ note trong ERD (xem bảng dưới) |
 | `src/common/filters/http-exception.filter.ts` | Chuẩn hoá lỗi (catch-all) |
 | `src/common/filters/database-error.mapper.ts` | Dịch mã lỗi ràng buộc Postgres → HTTP 4xx. **Không** tách thành filter riêng vì filter catch-all `@Catch()` luôn bắt trước, nên phải gọi mapper từ trong nó |
 | `src/common/interceptors/transform-response.interceptor.ts` | Bọc response `{ data, statusCode, timestamp }` |
+
+### 2.1. UnitOfWork — transaction cho nghiệp vụ nhiều bảng
+
+`UnitOfWorkModule` là `@Global()` nên **inject thẳng `UnitOfWork` được ở mọi service,
+không cần import module**. Dùng khi một nghiệp vụ phải ghi nhiều bảng và cần
+"tất cả cùng thành công hoặc cùng rollback":
+
+```ts
+constructor(private readonly unitOfWork: UnitOfWork) {}
+
+async placeOrder(dto: CreateOrderDto) {
+  return this.unitOfWork.execute(async (manager) => {
+    const orderRepo = this.unitOfWork.getRepository(manager, Order);
+    const inventoryRepo = this.unitOfWork.getRepository(manager, Inventory);
+    // ...
+  });
+}
+```
+
+⚠️ Bên trong `execute()` **bắt buộc** lấy repository qua
+`unitOfWork.getRepository(manager, Entity)`. Nếu lỡ dùng repository đã inject sẵn
+ở constructor, câu lệnh đó chạy **ngoài** transaction và sẽ không rollback theo.
+
+Hiện chưa service nào dùng — sẽ cần khi làm đặt hàng, trừ tồn kho, áp voucher.
 
 ### Enum (chỉ tạo enum ở nơi ERD ghi rõ giá trị)
 
@@ -209,12 +279,22 @@ nếu cần navigate 2 chiều; FK dưới DB không phụ thuộc vào việc �
 - `inventories`: chỉ có `updated_at`.
 - `order_items`: **không có** cột thời gian nào.
 
-### `admins` — trường hợp đặc biệt
+### 3 bảng profile — khác khuôn chung ở chỗ nào
 
-Bảng này **không có trong ERD**, do Dat tự thêm. Giữ nguyên thiết kế của Dat:
-khoá chính là `user_id` (lấy từ `users`, quan hệ 1-1), không tự sinh — chỉ đổi
-`bigint` → `uuid` theo quy ước chung. Route dùng `:userId` thay vì `:id`,
-và `UpdateAdminDto` loại bỏ `userId` (không cho sửa khoá chính).
+`customers`, `admins`, `warehouse_operators` dùng **`user_id` làm khoá chính**
+(lấy từ `users`, quan hệ 1-1), không tự sinh `id`. Kéo theo 4 điểm khác:
+
+| | Bảng thường | 3 bảng profile |
+| --- | --- | --- |
+| Khoá chính | `id` uuid tự sinh | `user_id` uuid do client truyền |
+| `super()` trong repository | `super(repo, 'X')` | `super(repo, 'X', 'userId')` |
+| Route | `/:id` | `/:userId` |
+| Update DTO | `PartialType(Create...)` | thêm `OmitType(..., ['userId'])` — không cho sửa khoá chính |
+
+Riêng `admins`: ERD gốc ghi sai chính tả `postition`, code dùng `position`.
+
+*(Ghi chú lịch sử: `admins` từng được coi là bảng ngoài ERD vì bản `db_ecommerce.png`
+cũ không có nó. Bản `erd.jpg` mới có đủ cả 3 bảng profile.)*
 
 ---
 
@@ -230,8 +310,8 @@ và `UpdateAdminDto` loại bỏ `userId` (không cho sửa khoá chính).
 | `shipments.carrier` giá trị `J&T` | `J&T` | `JT` | Ký tự `&` không hợp lệ cho tên thành viên enum trong TS |
 | `inventories` PK | `invetory_id` | `id` | Sửa lỗi chính tả + dùng `id` thống nhất |
 
-Ràng buộc `CHECK` trong ERD (`quantity > 0`, `rating 1-5`) hiện **chỉ validate ở tầng DTO**
-(`@Min` / `@Max`), chưa tạo CHECK constraint dưới DB. Nếu muốn ép ở DB thì thêm `@Check()`.
+Ràng buộc `CHECK` trong ERD (`quantity > 0`, `rating 1-5`) **đã tạo dưới DB** bằng
+`@Check()` — xem mục 3.2. DTO vẫn validate `@Min`/`@Max` để client nhận 400 sớm.
 
 ---
 
@@ -243,7 +323,7 @@ Database đã **host trên Aiven Cloud** (không còn dùng Postgres trong Docke
 cp .env.example .env      # rồi điền thông tin Aiven
 npm install
 npm run start:dev         # synchronize: true -> tự sinh/cập nhật bảng
-# Swagger: http://localhost:3000/docs
+# Swagger: http://localhost:3000/swagger/index.html
 # API:     http://localhost:3000/api/<route>
 ```
 
@@ -266,6 +346,16 @@ chấp nhận được; production nên tải `ca.pem` từ Aiven console và đ
 
 `.env` đã nằm trong `.gitignore` — đừng commit.
 
+### Đường dẫn Swagger đã đổi
+
+`main.ts` gọi `SwaggerModule.setup('/swagger/index.html', ...)` với
+`jsonDocumentUrl: '/swagger-json'`. Đường cũ `/docs` và `/docs-json` **không còn dùng được**.
+
+| | |
+| --- | --- |
+| Swagger UI | `http://localhost:3000/swagger/index.html` |
+| OpenAPI JSON | `http://localhost:3000/swagger-json` |
+
 **Đã verify trên Aiven (05/09/2026):** `npm run build` sạch, app boot không lỗi,
 cloud DB có đủ **25 bảng · 33 FOREIGN KEY · 17 UNIQUE · 4 CHECK**, seeder nạp đúng
 3 role. Smoke test đã chạy:
@@ -287,6 +377,55 @@ dữ liệu**, nên nếu bảng đang có dữ liệu thì boot sẽ fail hoặ
 cloud, rủi ro cao hơn hẳn so với lúc chạy Docker cục bộ — **chuyển sang migration
 trước khi có dữ liệu thật**.
 
+## 5.1. Sự cố đã gặp — đọc trước khi đổi entity
+
+### 10/09/2026 — mất cột `users.role_id`, app không boot được
+
+**Triệu chứng.** Boot lên báo `Unable to connect to the database. Retrying (1..10)`
+rồi chết. Đây là **thông báo gây hiểu nhầm** — TypeORM gộp mọi lỗi lúc
+`initialize()` vào message đó. Lỗi thật nằm ở dòng ngay trên:
+
+```
+query failed: ALTER TABLE "users" ADD "role_id" uuid NOT NULL
+error: column "role_id" of relation "users" contains null values
+```
+
+**Nguyên nhân.** Lúc đó `main` và `trung` có `user.entity.ts` **không có** `role_id`,
+còn `dev`/`dodo` thì **có**. Cả nhóm dùng chung một DB Aiven với `synchronize: true`
+— mà synchronize **xoá luôn cột nào không có trong entity**. Ai đó chạy nhánh `main`
+→ `role_id` bị drop; sau đó tạo 1 tài khoản; rồi chạy nhánh có `role_id` → TypeORM
+cố thêm lại cột `NOT NULL` trên bảng đã có dữ liệu → Postgres từ chối.
+
+**Điểm mấu chốt:** không phải lỗi của code-first hay của TypeORM. Thêm cột `NOT NULL`
+vào bảng đã có dòng thì dòng cũ phải nhận giá trị gì — không công cụ nào tự đoán được.
+EF Core, Prisma, Hibernate đều dừng y hệt. Chính cột này ngày 05/09 tạo trơn tru vì
+lúc đó bảng **rỗng**.
+
+`synchronize` chỉ tự động được khi thao tác **không cần quyết định về dữ liệu**:
+thêm bảng mới, thêm cột nullable, thêm cột có `default`.
+
+**Đã xử lý.** Xoá dòng dữ liệu test (`DELETE FROM users`) rồi boot lại → synchronize
+thêm cột bình thường. Các PR #12–#14 đã đồng bộ `role_id` cho cả 4 nhánh nên
+tình huống này không lặp lại vì lý do cũ nữa.
+
+**Quy ước rút ra:**
+
+1. **Trước khi sửa/xoá cột trong entity, báo cả nhóm.** DB dùng chung — sửa entity
+   là sửa schema của mọi người.
+2. **Đừng merge nhánh có entity lệch nhau.** Nhánh nào thêm cột thì merge lên `dev`
+   sớm, để không có hai phiên bản entity cùng chạy vào một DB.
+3. **Thêm cột NOT NULL vào bảng đã có dữ liệu** thì phải làm tay 3 bước:
+   ```sql
+   ALTER TABLE <bang> ADD COLUMN <cot> <kieu>;          -- nullable truoc
+   UPDATE <bang> SET <cot> = <gia_tri_mac_dinh>;         -- backfill
+   ALTER TABLE <bang> ALTER COLUMN <cot> SET NOT NULL;   -- roi moi siet
+   ```
+   Hoặc cho cột `nullable` / có `default` để synchronize tự làm được.
+4. **Khi thấy "Unable to connect to the database"** — đừng đi kiểm tra mạng hay
+   `.env` vội. Kéo log lên xem dòng `query failed:` phía trên trước.
+
+---
+
 ## 6. Việc còn lại (chưa làm)
 
 - [ ] **Chuyển từ `synchronize` sang migration** — ưu tiên cao nhất vì DB đã lên cloud.
@@ -295,6 +434,9 @@ trước khi có dữ liệu thật**.
       Thiếu index thì join và cascade delete sẽ chậm khi dữ liệu lớn. Thêm `@Index()`
       lên các cột FK + `products.slug`, `orders.order_code`…
 - [ ] Chiều ngược `@OneToMany` nếu cần navigate 2 chiều.
+- [ ] **Tách DB riêng cho từng dev** (Aiven cho tạo thêm database trên cùng service,
+      mỗi người đổi `DB_DATABASE` trong `.env`) — cách rẻ nhất để hết hẳn cảnh
+      `synchronize` của người này phá schema người kia. Xem mục 5.1.
 - [ ] Auth (JWT) + guard theo role (`RoleName`) — hiện **mọi endpoint đều public**,
       kể cả `POST /api/users` (ai cũng tạo được tài khoản ADMIN).
 - [ ] `password_hash` hiện nhận chuỗi thô từ DTO — phải hash (bcrypt/argon2) trong service.
