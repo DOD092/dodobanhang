@@ -27,6 +27,7 @@ async function bootstrap() {
     .setTitle('dodobanhang API')
     .setDescription('RESTful API for the dodobanhang e-commerce backend')
     .setVersion('0.0.1')
+    .addBearerAuth()
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('/swagger/index.html', app, swaggerDocument, {
@@ -36,7 +37,9 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') ?? 3000;
   await app.listen(port);
   console.log(`Server running on http://localhost:${port}`);
-  console.log(`Swagger UI available at http://localhost:${port}/swagger/index.html`);
+  console.log(
+    `Swagger UI available at http://localhost:${port}/swagger/index.html`,
+  );
 }
 
 void bootstrap();

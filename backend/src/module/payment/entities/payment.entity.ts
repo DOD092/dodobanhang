@@ -30,7 +30,13 @@ export class Payment {
   @Column({ type: 'varchar', length: 50, name: 'provider', nullable: true })
   provider?: string;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'amount', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'amount',
+    transformer: numericTransformer,
+  })
   amount: number;
 
   @Column({ type: 'varchar', length: 30, name: 'status' })

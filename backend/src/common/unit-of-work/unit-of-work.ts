@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource, EntityManager, EntityTarget, ObjectLiteral, Repository } from 'typeorm';
+import {
+  DataSource,
+  EntityManager,
+  EntityTarget,
+  ObjectLiteral,
+  Repository,
+} from 'typeorm';
 
 /**
  * Bọc 1 transaction DB dùng chung cho tất cả module. Dùng khi 1 nghiệp vụ

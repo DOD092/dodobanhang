@@ -6,6 +6,7 @@ export interface IUserRepository {
   create(dto: DeepPartial<User>): Promise<User>;
   findAll(pagination: PaginationQueryDto): Promise<User[]>;
   findOne(id: string): Promise<User>;
+  findByEmail(email: string): Promise<User | null>;
   update(id: string, dto: DeepPartial<User>): Promise<User>;
   remove(id: string): Promise<void>;
 }

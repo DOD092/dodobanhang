@@ -1,10 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsNumber,
-  IsUUID,
-  Min,
-} from 'class-validator';
+import { IsInt, IsNumber, IsUUID, Min } from 'class-validator';
 
 export class CreateCartItemDto {
   @ApiProperty({ format: 'uuid' })

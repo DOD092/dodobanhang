@@ -1,8 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsUUID } from 'class-validator';
 import { CartStatus } from '../../../common/enum/cart-status.enum';
 
 export class CreateCartDto {
