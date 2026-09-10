@@ -8,6 +8,7 @@ import { getDatabaseConfig } from './config/database.config';
 import { HealthController } from './health.controller';
 import { AddressModule } from './module/address/address.module';
 import { AdminModule } from './module/admin/admin.module';
+import { AuthModule } from './module/auth/auth.module';
 import { BrandModule } from './module/brand/brand.module';
 import { CartItemModule } from './module/cart-item/cart-item.module';
 import { CartModule } from './module/cart/cart.module';
@@ -42,6 +43,7 @@ import { WarehouseOperatorModule } from './module/warehouse-operator/warehouse-o
       useFactory: getDatabaseConfig,
     }),
     UnitOfWorkModule,
+    AuthModule,
     // Người dùng & phân quyền
     RoleModule,
     UserModule,

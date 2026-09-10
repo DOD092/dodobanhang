@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsEnum,
-} from 'class-validator';
+import { IsEnum } from 'class-validator';
 import { RoleName } from '../../../common/enum/role-name.enum';
 
 export class CreateRoleDto {

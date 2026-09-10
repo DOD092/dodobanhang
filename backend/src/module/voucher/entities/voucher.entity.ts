@@ -25,13 +25,33 @@ export class Voucher {
   @Column({ type: 'varchar', length: 20, name: 'discount_type' })
   discountType: DiscountType;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'discount_value', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'discount_value',
+    transformer: numericTransformer,
+  })
   discountValue: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'minimum_order_amount', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'minimum_order_amount',
+    default: 0,
+    transformer: numericTransformer,
+  })
   minimumOrderAmount: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'maximum_discount_amount', nullable: true, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'maximum_discount_amount',
+    nullable: true,
+    transformer: numericTransformer,
+  })
   maximumDiscountAmount?: number;
 
   @Column({ type: 'int', name: 'usage_count', default: 0 })

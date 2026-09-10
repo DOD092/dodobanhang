@@ -16,4 +16,8 @@ export class UserRepository
   ) {
     super(repository, 'User');
   }
+
+  findByEmail(email: string): Promise<User | null> {
+    return this.repository.findOne({ where: { email }, relations: ['role'] });
+  }
 }

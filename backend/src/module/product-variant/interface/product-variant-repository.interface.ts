@@ -6,9 +6,6 @@ export interface IProductVariantRepository {
   create(dto: DeepPartial<ProductVariant>): Promise<ProductVariant>;
   findAll(pagination: PaginationQueryDto): Promise<ProductVariant[]>;
   findOne(id: string): Promise<ProductVariant>;
-  update(
-    id: string,
-    dto: DeepPartial<ProductVariant>,
-  ): Promise<ProductVariant>;
+  update(id: string, dto: DeepPartial<ProductVariant>): Promise<ProductVariant>;
   remove(id: string): Promise<void>;
 }

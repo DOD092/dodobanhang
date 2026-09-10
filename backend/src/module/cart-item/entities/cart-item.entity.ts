@@ -37,7 +37,13 @@ export class CartItem {
   @Column({ type: 'int', name: 'quantity' })
   quantity: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'unit_price', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'unit_price',
+    transformer: numericTransformer,
+  })
   unitPrice: number;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })

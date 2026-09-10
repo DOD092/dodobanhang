@@ -24,11 +24,11 @@ export class CreateUserDto {
   @MaxLength(20)
   phone: string;
 
-  @ApiProperty({ maxLength: 255 })
+  @ApiProperty({ minLength: 8, maxLength: 72 })
   @IsNotEmpty()
   @IsString()
-  @MaxLength(255)
-  passwordHash: string;
+  @MaxLength(72)
+  password: string;
 
   @ApiProperty({ maxLength: 150 })
   @IsNotEmpty()

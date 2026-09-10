@@ -42,9 +42,22 @@ export class OrderItem {
   @Column({ type: 'int', name: 'quantity' })
   quantity: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'unit_price', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'unit_price',
+    transformer: numericTransformer,
+  })
   unitPrice: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'discount_amount', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'discount_amount',
+    default: 0,
+    transformer: numericTransformer,
+  })
   discountAmount: number;
 }

@@ -2,6 +2,7 @@
 // với class cụ thể trong providers của từng *.module.ts, và để Controller
 // inject qua @Inject(...) thay vì phụ thuộc trực tiếp vào class.
 export const ADDRESS_SERVICE = Symbol('ADDRESS_SERVICE');
+export const AUTH_SERVICE = Symbol('AUTH_SERVICE');
 export const ADMIN_SERVICE = Symbol('ADMIN_SERVICE');
 export const BRAND_SERVICE = Symbol('BRAND_SERVICE');
 export const CART_SERVICE = Symbol('CART_SERVICE');
