@@ -34,7 +34,13 @@ export class OrderVoucher {
   @Column({ type: 'varchar', length: 50, name: 'voucher_code' })
   voucherCode: string;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'discount_amount', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'discount_amount',
+    transformer: numericTransformer,
+  })
   discountAmount: number;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })

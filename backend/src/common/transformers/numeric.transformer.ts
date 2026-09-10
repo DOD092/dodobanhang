@@ -12,7 +12,7 @@ export class NumericTransformer implements ValueTransformer {
 
   from(value?: string | null): number | null | undefined {
     if (value === null || value === undefined) {
-      return value as null | undefined;
+      return value;
     }
     return Number(value);
   }

@@ -33,7 +33,14 @@ export class Shipment {
   @Column({ type: 'varchar', length: 30, name: 'status' })
   status: ShipmentStatus;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'shipping_fee', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'shipping_fee',
+    default: 0,
+    transformer: numericTransformer,
+  })
   shippingFee: number;
 
   @Column({ type: 'timestamptz', name: 'shipped_at', nullable: true })

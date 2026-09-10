@@ -41,19 +41,52 @@ export class Order {
   @Column({ type: 'varchar', length: 30, name: 'payment_status' })
   paymentStatus: PaymentStatus;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'subtotal', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'subtotal',
+    transformer: numericTransformer,
+  })
   subtotal: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'discount_amount', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'discount_amount',
+    default: 0,
+    transformer: numericTransformer,
+  })
   discountAmount: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'shipping_fee', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'shipping_fee',
+    default: 0,
+    transformer: numericTransformer,
+  })
   shippingFee: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'tax_amount', default: 0, transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'tax_amount',
+    default: 0,
+    transformer: numericTransformer,
+  })
   taxAmount: number;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'total_amount', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'total_amount',
+    transformer: numericTransformer,
+  })
   totalAmount: number;
 
   @Column({ type: 'text', name: 'customer_note', nullable: true })

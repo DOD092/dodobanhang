@@ -23,7 +23,8 @@ import { ICustomerService } from './interface/customer-service.interface';
 @Controller('customers')
 export class CustomerController {
   constructor(
-    @Inject(CUSTOMER_SERVICE) private readonly customerService: ICustomerService,
+    @Inject(CUSTOMER_SERVICE)
+    private readonly customerService: ICustomerService,
   ) {}
 
   @Post()

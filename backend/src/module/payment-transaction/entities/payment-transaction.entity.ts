@@ -24,19 +24,35 @@ export class PaymentTransaction {
   @JoinColumn({ name: 'payment_id' })
   payment: Payment;
 
-  @Column({ type: 'varchar', length: 100, name: 'provider_transaction_id', nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    name: 'provider_transaction_id',
+    nullable: true,
+  })
   providerTransactionId?: string;
 
   @Column({ type: 'varchar', length: 30, name: 'transaction_type' })
   transactionType: TransactionType;
 
-  @Column({ type: 'numeric', precision: 18, scale: 2, name: 'amount', transformer: numericTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 18,
+    scale: 2,
+    name: 'amount',
+    transformer: numericTransformer,
+  })
   amount: number;
 
   @Column({ type: 'varchar', length: 30, name: 'status' })
   status: PaymentStatus;
 
-  @Column({ type: 'varchar', length: 50, name: 'response_code', nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'response_code',
+    nullable: true,
+  })
   responseCode?: string;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
