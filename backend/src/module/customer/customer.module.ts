@@ -8,12 +8,12 @@ import { CustomerRepository } from './customer.repository';
 import { CustomerService } from './customer.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer])], // Dòng này quyết định việc sinh bảng
+  imports: [TypeOrmModule.forFeature([Customer])], 
   controllers: [CustomerController],
   providers: [
     { provide: CUSTOMER_SERVICE, useClass: CustomerService },
     { provide: CUSTOMER_REPOSITORY, useClass: CustomerRepository },
   ],
-  exports: [CUSTOMER_SERVICE],
+  exports: [CUSTOMER_SERVICE, CUSTOMER_REPOSITORY],
 })
 export class CustomerModule {}

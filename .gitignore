@@ -22,3 +22,6 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+
+# Ban sao .env dat nham ten - chua mat khau DB va JWT_SECRET
+requirements.txt

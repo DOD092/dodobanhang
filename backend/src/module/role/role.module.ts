@@ -17,6 +17,7 @@ import { RoleService } from './role.service';
     { provide: ROLE_REPOSITORY, useClass: RoleRepository },
     RoleSeeder,
   ],
-  exports: [ROLE_SERVICE],
+  // AuthService cần ROLE_REPOSITORY để tra id của role CUSTOMER lúc đăng ký
+  exports: [ROLE_SERVICE, ROLE_REPOSITORY],
 })
 export class RoleModule {}
