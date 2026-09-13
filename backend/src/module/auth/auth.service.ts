@@ -18,6 +18,7 @@ import { UserStatus } from '../../common/enum/user-status.enum';
 import { ICustomerRepository } from '../customer/interface/customer-repository.interface';
 import { IRoleRepository } from '../role/interface/role-repository.interface';
 import { IUserRepository } from '../user/interface/user-repository.interface';
+import { AuthMapper } from './auth.mapper';
 import { CustomerRegisterRequestDto } from './dto/customer-register-request.dto';
 import { CustomerRegisterResponseDto } from './dto/customer-register-response.dto';
 import { LoginDto } from './dto/login.dto';
@@ -32,6 +33,7 @@ export class AuthService implements IAuthService {
     private readonly customerRepository: ICustomerRepository,
     @Inject(ROLE_REPOSITORY) private readonly roleRepository: IRoleRepository,
     private readonly jwtService: JwtService,
+    private readonly authMapper: AuthMapper,
   ) {}
 
   async login(dto: LoginDto): Promise<LoginResult> {
@@ -62,40 +64,36 @@ export class AuthService implements IAuthService {
 
     // users.role_id là uuid FK sang bảng roles — phải tra id thật, không hardcode.
     // 3 role do RoleSeeder nạp sẵn lúc app khởi động (xem role.seeder.ts).
-    const customerRole = await this.roleRepository.findByName(RoleName.CUSTOMER);
+    const customerRole = await this.roleRepository.findByName(
+      RoleName.CUSTOMER,
+    );
     if (!customerRole) {
       throw new InternalServerErrorException(
         'Chưa có role CUSTOMER trong bảng roles.',
       );
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.userRepository.create({
-      email: dto.email,
-      passwordHash,
-      fullName: dto.name,
-      phone: dto.phone ?? '',
-      gender: dto.gender,
-      dateOfBirth: dto.dateOfBirth,
-      roleId: customerRole.id,
-      status: UserStatus.ACTIVE,
-    });
+    // TÁCH #1 — RequestDto -> User. 3 field server-only đi qua tham số thứ
+    // hai; TypeScript kiểm tra kiểu nhờ UserServerFields (extraArgs trần của
+    // AutoMapper là Record<string, unknown>, tự nó không bắt được lỗi gõ sai).
+    const user = await this.userRepository.create(
+      this.authMapper.toUser(dto, {
+        passwordHash: await bcrypt.hash(dto.password, 10),
+        roleId: customerRole.id,
+        status: UserStatus.ACTIVE,
+      }),
+    );
 
-    const customer = await this.customerRepository.create({
-      userId: user.id,
-      customerCode: this.generateCustomerCode(),
-      loyaltyPoints: 0,
-    });
+    // TÁCH #2 — RequestDto -> Customer. Không field nào đến từ client.
+    const customer = await this.customerRepository.create(
+      this.authMapper.toCustomer(dto, {
+        userId: user.id,
+        customerCode: this.generateCustomerCode(),
+      }),
+    );
 
-    return {
-      userId: user.id,
-      customerId: customer.userId,
-      customerCode: customer.customerCode,
-      email: user.email,
-      fullName: user.fullName,
-      dateOfBirth: user.dateOfBirth,
-      gender: user.gender,
-    };
+    // GỘP — User + Customer -> 1 ResponseDto, một lời gọi nhờ forSelf.
+    return this.authMapper.toRegisterResponse(user, customer);
   }
 
   /**
