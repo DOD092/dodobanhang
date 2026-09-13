@@ -1,3 +1,4 @@
+import { AutoMap } from '@automapper/classes';
 import {
   Column,
   CreateDateColumn,
@@ -12,27 +13,36 @@ import { Role } from '../../role/entities/role.entity';
 
 @Entity('users')
 export class User {
+  @AutoMap()
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @AutoMap()
   @Column({ type: 'varchar', length: 255, name: 'email', unique: true })
   email: string;
 
+  @AutoMap()
   @Column({ type: 'varchar', length: 20, name: 'phone' })
   phone: string;
 
+  // 3 field dưới đây CỐ Ý không có @AutoMap(): passwordHash/status/roleId do
+  // server tự quyết. Không gắn decorator = AutoMapper không bao giờ đổ được
+  // giá trị từ DTO của client vào, kể cả khi client cố gửi lên.
   @Column({ type: 'varchar', length: 255, name: 'password_hash' })
   passwordHash: string;
 
+  @AutoMap()
   @Column({ type: 'varchar', length: 150, name: 'full_name' })
   fullName: string;
 
   @Column({ type: 'varchar', length: 500, name: 'avatar_url', nullable: true })
   avatarUrl?: string;
 
+  @AutoMap(() => Date)
   @Column({ type: 'date', name: 'date_of_birth', nullable: true })
   dateOfBirth?: Date;
 
+  @AutoMap()
   @Column({ type: 'varchar', length: 20, name: 'gender', nullable: true })
   gender?: string;
 
