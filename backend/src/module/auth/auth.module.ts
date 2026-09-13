@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { AUTH_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
+import { AuthMapper } from './auth.mapper';
+import { AuthProfile } from './auth.profile';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { CustomerModule } from '../customer/customer.module';
@@ -28,6 +30,14 @@ import { RoleModule } from '../role/role.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [{ provide: AUTH_SERVICE, useClass: AuthService }, JwtStrategy],
+  providers: [
+    { provide: AUTH_SERVICE, useClass: AuthService },
+    JwtStrategy,
+    // Profile phải là provider thì AutomapperModule mới nạp được luật map.
+    // AutomapperModule.forRoot() đăng ký global (global: true) nên không
+    // cần import lại ở đây, chỉ cần khai báo profile.
+    AuthProfile,
+    AuthMapper,
+  ],
 })
 export class AuthModule {}

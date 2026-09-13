@@ -10,6 +10,8 @@ import { map } from 'rxjs/operators';
 
 export interface ResponseEnvelope<T> {
   data: T;
+  isSuccess: boolean;
+  message: string;
   statusCode: number;
   timestamp: string;
 }
@@ -32,7 +34,9 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
         }
 
         return {
-          data,
+          data: data,
+          isSuccess: true,
+          message: 'Success',
           statusCode: response.statusCode,
           timestamp: new Date().toISOString(),
         };

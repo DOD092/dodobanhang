@@ -1,3 +1,4 @@
+import { AutoMap } from '@automapper/classes';
 import {
   Column,
   CreateDateColumn,
@@ -12,6 +13,7 @@ import { User } from '../../user/entities/user.entity';
 @Entity('customers')
 export class Customer {
   // PK/FK: khoá chính lấy từ bảng users (quan hệ 1-1), không tự sinh
+  @AutoMap()
   @PrimaryColumn({ type: 'uuid', name: 'user_id' })
   userId: string;
 
@@ -19,9 +21,11 @@ export class Customer {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  @AutoMap()
   @Column({ type: 'varchar', length: 50, unique: true, name: 'customer_code' })
   customerCode: string;
 
+  @AutoMap()
   @Column({ type: 'int', default: 0, name: 'loyalty_points' })
   loyaltyPoints: number;
 

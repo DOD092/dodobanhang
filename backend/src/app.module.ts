@@ -1,3 +1,5 @@
+import { classes } from '@automapper/classes';
+import { AutomapperModule } from '@automapper/nestjs';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -36,6 +38,10 @@ import { WarehouseOperatorModule } from './module/warehouse-operator/warehouse-o
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Mapper toàn cục cho automap Entity <-> DTO.
+    // `classes()` là strategy đọc metadata do decorator @AutoMap() sinh ra
+    // (dựa trên emitDecoratorMetadata trong tsconfig).
+    AutomapperModule.forRoot({ strategyInitializer: classes() }),
     // Cấu hình kết nối TypeORM — đọc từ .env qua src/config/database.config.ts
     // (tự bật SSL khi host không phải localhost, vd. Postgres trên Aiven)
     TypeOrmModule.forRootAsync({
