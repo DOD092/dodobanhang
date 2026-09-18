@@ -11,4 +11,13 @@ export class MailService {
       `Send code ${verificationCode} to ${email}`,
     );
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    code: string,
+  ): Promise<void> {
+    console.log(
+      `Password reset code ${code} sent to email: ${email}`,
+    );
+  }
 }

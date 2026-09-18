@@ -18,8 +18,8 @@ import { CustomerRegisterResponseDto } from './dto/customer-register-response.dt
 import { LoginDto } from './dto/login.dto';
 import { IAuthService } from './interface/auth-service.interface';
 import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
-
-@ApiTags('auth')
+import { ForgotPasswordDto, ForgotPasswordResponseDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto, ResetPasswordResponseDto } from './dto/reset-password.dto';@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -65,5 +65,25 @@ export class AuthController {
     @Body() dto: VerifyCustomerEmailDto,
   ): Promise<VerifyCustomerEmailResponseDto> {
     return this.authService.resendVerificationCode(dto);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Send password reset code',
+  })
+  forgotPassword  (
+    @Body() dto:ForgotPasswordDto,
+  ): Promise<ForgotPasswordResponseDto>{
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({
+    summary:'Reset password'
+  })
+  resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<ResetPasswordResponseDto>{
+    return this.authService.resetPassword(dto);
   }
 }

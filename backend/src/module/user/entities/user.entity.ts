@@ -76,4 +76,19 @@ export class User {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({
+  type: 'varchar',
+  length: 6,
+  nullable: true,
+  name: 'reset_password_code',
+  })
+  passwordResetCode: string | null;
+
+  @Column({
+    type:'timestamptz',
+    nullable:true,
+    name:'reset_password_expire_at',
+  })
+  passwordResetExpireAt: Date | null;
 }

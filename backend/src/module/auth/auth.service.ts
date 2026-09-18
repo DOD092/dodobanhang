@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -26,6 +27,8 @@ import { IAuthService, LoginResult } from './interface/auth-service.interface';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
 import {MailService} from '../mail/mail.service';
+import { ForgotPasswordDto,ForgotPasswordResponseDto } from './dto/forgot-password.dto';
+import{ResetPasswordDto, ResetPasswordResponseDto} from './dto/reset-password.dto';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -147,5 +150,48 @@ export class AuthService implements IAuthService {
     await this.mailService.sendVerificationEmail(user.email, newVerificationCode);
     return { message: 'Mã xác thực mới đã được gửi đến email của bạn.' };
   } 
-}
 
+  async forgotPassword(dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto> {
+    const user = await this.userRepository.findByEmail(dto.email);// ngon
+    if (!user) {
+      return { message: 'Nếu email tồn tại, đặt lại mật khẩu đã được gửi' };
+    }
+    const passwordResetCode=randomInt(100000, 1000000).toString();
+    const passwordResetExpireAt=new Date(Date.now() + 5 * 60 * 1000);
+
+    await this.userRepository.update(user.id,{
+      passwordResetCode:passwordResetCode,
+      passwordResetExpireAt:passwordResetExpireAt,
+    })
+
+    await this.mailService.sendPasswordResetEmail(user.email,passwordResetCode);
+    return { message: 'Nếu email tồn tại, đặt lại mật khẩu đã được gửi' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<ResetPasswordResponseDto> {
+    const user = await this.userRepository.findByEmail(dto.email);
+
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại.',);
+    }
+
+    if (user.passwordResetCode !== dto.passwordResetCode){
+      throw new BadRequestException('Mã đặt lại mật khẩu không đúng.',);
+    }
+    
+    if (!user.passwordResetExpireAt||user.passwordResetExpireAt<new Date()){
+      throw new BadRequestException('Mã đặt lại đã hết hạn.',);
+    }
+    //hashpassword mới 
+    const passwordHash= await bcrypt.hash(dto.newPassword,10);
+
+    await this.userRepository.update(user.id,{
+      passwordHash,
+      passwordResetCode: null,
+      passwordResetExpireAt: null,
+    });
+    return{
+      message:'Đặt lại mật khẩu thành công',
+    };
+  }
+}
