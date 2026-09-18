@@ -18,6 +18,8 @@ export interface UserServerFields extends Record<string, unknown> {
   passwordHash: string;
   roleId: string;
   status: UserStatus;
+  verificationCode: string;
+  verificationExpireAt: Date;
 }
 
 /** Tương tự cho Customer — cả 3 field đều không đến từ client. */

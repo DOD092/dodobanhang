@@ -77,6 +77,8 @@ export class AuthProfile extends AutomapperProfile {
           mapWithArguments((_source, { status }) => status as UserStatus),
         ),
         forMember((d) => d.id, ignore()),
+        forMember((d) => d.verificationCode, mapWithArguments((_source, { verificationCode }) => verificationCode as string)),
+        forMember((d) => d.verificationExpireAt, mapWithArguments((_source, { verificationExpireAt }) => verificationExpireAt as Date)),
       );
 
       // Customer không nhận field nào từ client: cả 3 đều do server quyết.

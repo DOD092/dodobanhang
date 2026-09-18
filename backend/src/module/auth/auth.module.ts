@@ -11,13 +11,14 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 import { CustomerModule } from '../customer/customer.module';
 import { RoleModule } from '../role/role.module';
-
+import { MailModule } from '../mail/mail.module';
 @Module({
   imports: [
     UserModule,
     CustomerModule,
     RoleModule,
     PassportModule,
+    MailModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

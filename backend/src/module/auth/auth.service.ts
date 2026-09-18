@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import {
   CUSTOMER_REPOSITORY,
   ROLE_REPOSITORY,
@@ -24,7 +24,8 @@ import { CustomerRegisterResponseDto } from './dto/customer-register-response.dt
 import { LoginDto } from './dto/login.dto';
 import { IAuthService, LoginResult } from './interface/auth-service.interface';
 import { JwtPayload } from './interface/jwt-payload.interface';
-
+import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
+import {MailService} from '../mail/mail.service';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -34,6 +35,7 @@ export class AuthService implements IAuthService {
     @Inject(ROLE_REPOSITORY) private readonly roleRepository: IRoleRepository,
     private readonly jwtService: JwtService,
     private readonly authMapper: AuthMapper,
+    private readonly mailService: MailService,
   ) {}
 
   async login(dto: LoginDto): Promise<LoginResult> {
@@ -61,6 +63,8 @@ export class AuthService implements IAuthService {
     if (existedUser) {
       throw new ConflictException('Email đã tồn tại');
     }
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const verificationCode =randomInt(100000, 1000000).toString();
 
     // users.role_id là uuid FK sang bảng roles — phải tra id thật, không hardcode.
     // 3 role do RoleSeeder nạp sẵn lúc app khởi động (xem role.seeder.ts).
@@ -80,7 +84,9 @@ export class AuthService implements IAuthService {
       this.authMapper.toUser(dto, {
         passwordHash: await bcrypt.hash(dto.password, 10),
         roleId: customerRole.id,
-        status: UserStatus.ACTIVE,
+        status: UserStatus.INACTIVE,
+        verificationCode: verificationCode,
+        verificationExpireAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
       }),
     );
 
@@ -92,7 +98,6 @@ export class AuthService implements IAuthService {
       }),
     );
 
-    // GỘP — User + Customer -> 1 ResponseDto, một lời gọi nhờ forSelf.
     return this.authMapper.toRegisterResponse(user, customer);
   }
 
@@ -106,4 +111,41 @@ export class AuthService implements IAuthService {
     const randomPart = randomBytes(3).toString('hex').toUpperCase();
     return `CUS-${timePart}-${randomPart}`;
   }
+
+  async verifyCustomerEmail(dto: VerifyCustomerEmailDto): Promise<VerifyCustomerEmailResponseDto> {
+    const user=await this.userRepository.findByEmail(dto.email);
+    if(!user){
+      throw new UnauthorizedException('Email không tồn tại.');
+    }
+    if(user.verificationCode !== dto.verificationCode) {
+      throw new UnauthorizedException('Mã xác thực không đúng.');
+    }
+    if(!user.verificationExpireAt || user.verificationExpireAt < new Date()) {
+      throw new UnauthorizedException('Mã xác thực đã hết hạn.');
+    }
+    await this.userRepository.update(user.id, 
+  { status: UserStatus.ACTIVE, verificationCode: null, verificationExpireAt: null });
+    return { message: 'Xác thực email thành công.' };
+  } 
+
+  async resendVerificationCode(dto: VerifyCustomerEmailDto): Promise<VerifyCustomerEmailResponseDto> {
+    const user = await this.userRepository.findByEmail(dto.email);
+    if (!user) {
+      throw new UnauthorizedException('Email không tồn tại.');
+    }
+    if (user.status === UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Tài khoản đã được xác thực.');
+    }
+    const newVerificationCode = randomInt(100000, 1000000).toString();
+    const verificationExpireAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await this.userRepository.update(user.id, {
+      verificationCode: newVerificationCode,
+      verificationExpireAt: verificationExpireAt,
+    });
+
+    await this.mailService.sendVerificationEmail(user.email, newVerificationCode);
+    return { message: 'Mã xác thực mới đã được gửi đến email của bạn.' };
+  } 
 }
+

@@ -56,6 +56,21 @@ export class User {
   @JoinColumn({ name: 'role_id' })
   role: Role;
 
+  @Column({
+  type: 'varchar',
+  length: 6,
+  nullable: true,
+  name: 'verification_code',
+  })
+  verificationCode: string | null;
+
+  @Column({
+  type: 'timestamptz',
+  nullable: true,
+  name: 'verification_expire_at',
+  })
+  verificationExpireAt: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
