@@ -5,7 +5,7 @@ import { VerifyCustomerEmailDto,VerifyCustomerEmailResponseDto } from '../dto/ve
 import{ResendVerificationDto,ResendVerificationResponseDto} from '../dto/resend-verification.dto';
 import { ForgotPasswordDto, ForgotPasswordResponseDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto,ResetPasswordResponseDto } from '../dto/reset-password.dto';
-
+import { ChangePasswordDto,ChangePasswordResponseDto } from '../dto/change-password.dto';
 export interface LoginResult {
   accessToken: string;
 }
@@ -24,5 +24,7 @@ export interface IAuthService {
   forgotPassword(dto: ForgotPasswordDto): Promise<ForgotPasswordResponseDto>;
   
   resetPassword(dto: ResetPasswordDto): Promise<ResetPasswordResponseDto>;
+
+  changePassword(userId: string,dto: ChangePasswordDto): Promise<ChangePasswordResponseDto>;
 }
 

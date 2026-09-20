@@ -52,7 +52,7 @@ export class UserController {
     return this.userService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  
   @ApiBearerAuth()
   @Patch(':id')
   @ApiOperation({ summary: 'Update a User' })

@@ -5,8 +5,11 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOperation,
@@ -19,7 +22,9 @@ import { LoginDto } from './dto/login.dto';
 import { IAuthService } from './interface/auth-service.interface';
 import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
 import { ForgotPasswordDto, ForgotPasswordResponseDto } from './dto/forgot-password.dto';
-import { ResetPasswordDto, ResetPasswordResponseDto } from './dto/reset-password.dto';@ApiTags('auth')
+import { ResetPasswordDto, ResetPasswordResponseDto } from './dto/reset-password.dto';
+import { ChangePasswordResponseDto, ChangePasswordDto } from './dto/change-password.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -85,5 +90,22 @@ export class AuthController {
     @Body() dto: ResetPasswordDto,
   ): Promise<ResetPasswordResponseDto>{
     return this.authService.resetPassword(dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary:'Change password'
+  })
+  changePassword(
+    @Req() req:any,
+    @Body() dto:ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto>{
+    return this.authService.changePassword(
+      req.user.userId,
+      dto,
+    )
   }
 }

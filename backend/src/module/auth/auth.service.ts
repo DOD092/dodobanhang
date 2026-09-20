@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -29,6 +30,7 @@ import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/ve
 import {MailService} from '../mail/mail.service';
 import { ForgotPasswordDto,ForgotPasswordResponseDto } from './dto/forgot-password.dto';
 import{ResetPasswordDto, ResetPasswordResponseDto} from './dto/reset-password.dto';
+import { ChangePasswordDto, ChangePasswordResponseDto } from './dto/change-password.dto';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -40,6 +42,7 @@ export class AuthService implements IAuthService {
     private readonly authMapper: AuthMapper,
     private readonly mailService: MailService,
   ) {}
+  
 
   async login(dto: LoginDto): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(dto.email);
@@ -192,6 +195,29 @@ export class AuthService implements IAuthService {
     });
     return{
       message:'Đặt lại mật khẩu thành công',
+    };
+  }
+  
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto>{
+    const user= await this.userRepository.findOne(userId);
+    if(!user){
+      throw new NotFoundException('Không tìm thấy tài khoản');
+    }
+    const isMatch=await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+
+    if(!isMatch){
+      throw new BadRequestException('Mật khẩu hiện tại không đúng',)
+    }
+    const passwordHash=await bcrypt.hash(dto.newPassword,10,);
+    await this.userRepository.update(user.id,{passwordHash},);
+    return{
+      message:'Đổi mật khẩu thành công',
     };
   }
 }
