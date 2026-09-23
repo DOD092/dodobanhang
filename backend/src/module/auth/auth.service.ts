@@ -31,6 +31,13 @@ import {MailService} from '../mail/mail.service';
 import { ForgotPasswordDto,ForgotPasswordResponseDto } from './dto/forgot-password.dto';
 import{ResetPasswordDto, ResetPasswordResponseDto} from './dto/reset-password.dto';
 import { ChangePasswordDto, ChangePasswordResponseDto } from './dto/change-password.dto';
+import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
+import { ConfigService } from '@nestjs/config';
+import { GoogleAuthDto, GoogleAuthResponseDto } from './dto/google-auth.dto';
+import { UnitOfWork } from '../../common/unit-of-work/unit-of-work';
+import { Customer } from '../customer/entities/customer.entity';
+import { User } from '../user/entities/user.entity';
+import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -41,13 +48,20 @@ export class AuthService implements IAuthService {
     private readonly jwtService: JwtService,
     private readonly authMapper: AuthMapper,
     private readonly mailService: MailService,
+    private readonly configService: ConfigService,
+    // UnitOfWorkModule là @Global nên inject thẳng, không cần import module.
+    private readonly unitOfWork: UnitOfWork,
   ) {}
-  
-
+  googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto> {
+    throw new Error('Method not implemented.');
+  }
   async login(dto: LoginDto): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(dto.email);
+    // passwordHash null = tài khoản chỉ đăng nhập bằng Google. Phải chặn ở đây
+    // vì bcrypt.compare(pw, null) NÉM lỗi chứ không trả về false -> 500 thay vì 401.
     const isMatch =
-      user && (await bcrypt.compare(dto.password, user.passwordHash));
+      user?.passwordHash &&
+      (await bcrypt.compare(dto.password, user.passwordHash));
 
     if (!isMatch) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng.');
@@ -206,6 +220,11 @@ export class AuthService implements IAuthService {
     if(!user){
       throw new NotFoundException('Không tìm thấy tài khoản');
     }
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'Tài khoản đăng nhập bằng Google chưa có mật khẩu.',
+      );
+    }
     const isMatch=await bcrypt.compare(
       dto.currentPassword,
       user.passwordHash,
@@ -218,6 +237,43 @@ export class AuthService implements IAuthService {
     await this.userRepository.update(user.id,{passwordHash},);
     return{
       message:'Đổi mật khẩu thành công',
+    };
+  }
+  async createStaffAccount(
+    dto: CreateStaffAccountDto,
+  ): Promise<CreateStaffAccountResponseDto>{
+    if (
+      dto.role !== 'ADMIN'&&
+      dto.role!=='WAREHOUSE_OPERATOR'
+    ){
+      throw new BadRequestException('Chỉ được tạo tài khoản ADMIN hoặc WAREHOUSE_OPERATOR',);
+    }
+    const existedUser=await this.userRepository.findByEmail(dto.email)
+    if(existedUser){
+      throw new ConflictException('Email đã tồn tại',);
+    }
+
+    const roleName = dto.role as RoleName;
+    const role=await this.roleRepository.findByName(roleName,);
+    if(!role){
+      throw new InternalServerErrorException('Không tìm thấy role ${dto.role}.',);
+    }
+    const passwordHash=await bcrypt.hash(dto.password,10);
+    const user=await this.userRepository.create({
+      email:dto.email,
+      fullName:dto.fullName,
+      phone:dto.phone,
+      passwordHash,
+      roleId:role.id,
+      status: UserStatus.ACTIVE,
+      verificationCode:null,
+      verificationExpireAt: null,
+    });
+    return{
+      id: user.id,
+      email:user.email,
+      fullName:user.fullName,
+      role:dto.role,
     };
   }
 }

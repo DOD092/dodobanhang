@@ -6,9 +6,7 @@ import { User } from './entities/user.entity';
 import { IUserRepository } from './interface/user-repository.interface';
 
 @Injectable()
-export class UserRepository
-  extends BaseRepository<User>
-  implements IUserRepository
+export class UserRepository extends BaseRepository<User> implements IUserRepository
 {
   constructor(
     @InjectRepository(User)
@@ -19,5 +17,12 @@ export class UserRepository
 
   findByEmail(email: string): Promise<User | null> {
     return this.repository.findOne({ where: { email }, relations: ['role'] });
+  }
+
+  findByGoogleId(googleId: string): Promise<User | null> {
+      return this.repository.findOne({
+        where:{googleId},
+        relations:['role'],
+      });
   }
 }

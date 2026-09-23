@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Cach 1 (khuyen dung): bam F5 -> VSCode tu chay app bang yarn + gan debugger.
+      // Nho tat terminal dang chay `yarn start:dev` truoc, khong la dung cong 3000.
+      "name": "Nest: debug (yarn start:debug)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["start:debug"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      // `nest start --watch` de ra tien trinh con -> thieu dong nay la breakpoint khong dung
+      "autoAttachChildProcesses": true,
+      "restart": true,
+      "sourceMaps": true,
+      // Code chay that la dist/*.js; VSCode dua vao dist/*.js.map de anh xa nguoc ve src/*.ts
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    },
+    {
+      // Cach 2: da chay `yarn start:debug` o terminal roi -> chon cai nay de gan vao.
+      "name": "Nest: attach 9229",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "cwd": "${workspaceFolder}",
+      "sourceMaps": true,
+      // Code chay that la dist/*.js; VSCode dua vao dist/*.js.map de anh xa nguoc ve src/*.ts
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
+    }
+  ]
+}

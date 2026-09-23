@@ -21,15 +21,24 @@ export class User {
   @Column({ type: 'varchar', length: 255, name: 'email', unique: true })
   email: string;
 
-  @AutoMap()
-  @Column({ type: 'varchar', length: 20, name: 'phone' })
-  phone: string;
+  // nullable: Google không trả về số điện thoại. Form đăng ký thường vẫn bắt
+  // buộc nhập (ràng buộc nằm ở DTO), chỉ cột DB là nới ra.
+  @AutoMap(() => String)
+  @Column({type: 'varchar', nullable: true,})
+  phone: string | null;
 
   // 3 field dưới đây CỐ Ý không có @AutoMap(): passwordHash/status/roleId do
   // server tự quyết. Không gắn decorator = AutoMapper không bao giờ đổ được
   // giá trị từ DTO của client vào, kể cả khi client cố gửi lên.
-  @Column({ type: 'varchar', length: 255, name: 'password_hash' })
-  passwordHash: string;
+  //
+  // nullable: tài khoản đăng nhập bằng Google không có mật khẩu.
+  @Column({
+    type: 'varchar',
+    length: 255,
+    name: 'password_hash',
+    nullable: true,
+  })
+  passwordHash: string | null;
 
   @AutoMap()
   @Column({ type: 'varchar', length: 150, name: 'full_name' })
@@ -90,5 +99,15 @@ export class User {
     nullable:true,
     name:'reset_password_expire_at',
   })
-  passwordResetExpireAt: Date | null;
+  passwordResetExpireAt!: Date | null;
+
+  @Column({
+  type: 'varchar',
+  length: 255,
+  nullable: true,
+  unique: true,
+  name: 'google_id',
+  })
+  googleId!: string | null;
+
 }

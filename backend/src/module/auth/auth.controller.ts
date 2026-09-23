@@ -25,6 +25,11 @@ import { ForgotPasswordDto, ForgotPasswordResponseDto } from './dto/forgot-passw
 import { ResetPasswordDto, ResetPasswordResponseDto } from './dto/reset-password.dto';
 import { ChangePasswordResponseDto, ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { AuthenticatedUser } from './interface/jwt-payload.interface';
+import { RoleName } from 'src/common/enum/role-name.enum';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import {RolesGuard,} from '../../common/guards/roles.guard';
+import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -92,20 +97,33 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CUSTOMER','WAREHOUSE_OPERATOR','ADMIN',)
   @ApiBearerAuth()
   @Post('change-password')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({
-    summary:'Change password'
+    summary: 'Change password',
   })
   changePassword(
-    @Req() req:any,
-    @Body() dto:ChangePasswordDto,
-  ): Promise<ChangePasswordResponseDto>{
+  @Req() req: { user: AuthenticatedUser },
+  @Body() dto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto> {
     return this.authService.changePassword(
-      req.user.userId,
+      req.user.id,
       dto,
-    )
+  );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @Post('staff')
+  @ApiOperation({
+    summary:'Admin create staff account',
+  })
+  async createStaffAccount(
+    @Body() dto: CreateStaffAccountDto,
+  ): Promise<CreateStaffAccountResponseDto> {
+    return this.authService.createStaffAccount(dto);
   }
 }

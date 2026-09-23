@@ -6,6 +6,9 @@ import{ResendVerificationDto,ResendVerificationResponseDto} from '../dto/resend-
 import { ForgotPasswordDto, ForgotPasswordResponseDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto,ResetPasswordResponseDto } from '../dto/reset-password.dto';
 import { ChangePasswordDto,ChangePasswordResponseDto } from '../dto/change-password.dto';
+import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuthDto, GoogleAuthResponseDto } from '../dto/google-auth.dto';
+import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from '../dto/create-staff-account.dto';
 export interface LoginResult {
   accessToken: string;
 }
@@ -26,5 +29,9 @@ export interface IAuthService {
   resetPassword(dto: ResetPasswordDto): Promise<ResetPasswordResponseDto>;
 
   changePassword(userId: string,dto: ChangePasswordDto): Promise<ChangePasswordResponseDto>;
+
+  googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto>;
+
+  createStaffAccount(dto: CreateStaffAccountDto,): Promise<CreateStaffAccountResponseDto>;
 }
 
