@@ -10,4 +10,5 @@ export interface IUserRepository {
   update(id: string, dto: DeepPartial<User>): Promise<User>;
   remove(id: string): Promise<void>;
   findByGoogleId(googleId:string,): Promise<User|null>;
+  findAllWithDetails(roleFilter?: string): Promise<User[]>;
 }

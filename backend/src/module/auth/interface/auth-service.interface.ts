@@ -9,6 +9,7 @@ import { ChangePasswordDto,ChangePasswordResponseDto } from '../dto/change-passw
 import { GoogleAuth } from 'google-auth-library';
 import { GoogleAuthDto, GoogleAuthResponseDto } from '../dto/google-auth.dto';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from '../dto/create-staff-account.dto';
+import { GetUsersQueryDto, UserDetailResponseDto } from '../dto/get-users.dto';
 export interface LoginResult {
   accessToken: string;
 }
@@ -33,5 +34,7 @@ export interface IAuthService {
   googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto>;
 
   createStaffAccount(dto: CreateStaffAccountDto,): Promise<CreateStaffAccountResponseDto>;
+
+  getAllUsers(query: GetUsersQueryDto): Promise<UserDetailResponseDto[]>;
 }
 

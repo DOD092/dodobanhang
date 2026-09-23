@@ -38,6 +38,7 @@ import { UnitOfWork } from '../../common/unit-of-work/unit-of-work';
 import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
+import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -52,6 +53,7 @@ export class AuthService implements IAuthService {
     // UnitOfWorkModule là @Global nên inject thẳng, không cần import module.
     private readonly unitOfWork: UnitOfWork,
   ) {}
+  
   googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto> {
     throw new Error('Method not implemented.');
   }
@@ -239,6 +241,7 @@ export class AuthService implements IAuthService {
       message:'Đổi mật khẩu thành công',
     };
   }
+
   async createStaffAccount(
     dto: CreateStaffAccountDto,
   ): Promise<CreateStaffAccountResponseDto>{
@@ -275,5 +278,29 @@ export class AuthService implements IAuthService {
       fullName:user.fullName,
       role:dto.role,
     };
+  }
+
+  async getAllUsers(query: GetUsersQueryDto): Promise<UserDetailResponseDto[]>{
+    const users= await this.userRepository.findAllWithDetails(query.role);
+
+    return users.map((user)=>{
+      const roleName=user.role?.name;
+      const userAny= user as any;
+      return {
+        id:user.id,
+        email:user.email,
+        fullName:user.fullName,
+        phone:user.phone ?? undefined,
+        role:roleName,
+        status:user.status,
+        createdAt:user.createdAt,
+        customerInfo:
+          roleName === 'CUSTOMER'&& userAny.customer
+            ?{
+              customerCode: userAny.customer.customerCode,
+            }
+            : undefined
+      };
+    });
   }
 }

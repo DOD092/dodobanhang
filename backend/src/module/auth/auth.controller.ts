@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import {
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOperation,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { AUTH_SERVICE } from '../../common/dependency-injection/service.tokens';
@@ -30,6 +33,7 @@ import { RoleName } from 'src/common/enum/role-name.enum';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import {RolesGuard,} from '../../common/guards/roles.guard';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
+import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -126,4 +130,23 @@ export class AuthController {
   ): Promise<CreateStaffAccountResponseDto> {
     return this.authService.createStaffAccount(dto);
   }
+
+  @Get('users')
+  @UseGuards(JwtAuthGuard,RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin lấy danh sách user, lọc theo role',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:'Danh sách user theo filter',
+    type:[UserDetailResponseDto],
+  })
+  async getAllUsers(
+    @Query() query:GetUsersQueryDto,
+  ): Promise<UserDetailResponseDto[]>{
+    return this.authService.getAllUsers(query)
+  }
+
 }

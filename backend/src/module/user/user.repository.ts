@@ -25,4 +25,12 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
         relations:['role'],
       });
   }
+
+  async findAllWithDetails(roleFilter?: string): Promise<User[]>{
+    return this.repository.find({
+      where:roleFilter ? {role:{name:roleFilter as any}}:{},
+      relations:['role','customer'],
+      order:{createdAt:'DESC'as any},
+    });
+  }
 }

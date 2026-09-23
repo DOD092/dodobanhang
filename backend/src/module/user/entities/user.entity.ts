@@ -5,11 +5,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserStatus } from '../../../common/enum/user-status.enum';
 import { Role } from '../../role/entities/role.entity';
+import { Customer } from 'src/module/customer/entities/customer.entity';
 
 @Entity('users')
 export class User {
@@ -64,6 +66,9 @@ export class User {
   @ManyToOne(() => Role, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'role_id' })
   role: Role;
+
+  @OneToOne(() => Customer, (customer: { user: any; }) => customer.user)
+  customer?: Customer;
 
   @Column({
   type: 'varchar',

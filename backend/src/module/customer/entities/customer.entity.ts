@@ -17,8 +17,8 @@ export class Customer {
   @PrimaryColumn({ type: 'uuid', name: 'user_id' })
   userId: string;
 
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @OneToOne(() => User, (user) => user.customer)
+  @JoinColumn({ name: 'user_id' }) // Customer giữ khóa ngoại user_id
   user: User;
 
   @AutoMap()
