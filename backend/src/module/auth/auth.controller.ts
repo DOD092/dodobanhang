@@ -36,6 +36,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import {RolesGuard,} from '../../common/guards/roles.guard';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
+import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -151,6 +152,30 @@ export class AuthController {
     return this.authService.getAllUsers(query)
   }
 
+  @Get('users/search')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin tìm kiếm User theo 1 trường (email hoặc phone) kèm data theo role',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: UserDetailResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Chưa truyền email hoặc phone',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy người dùng',
+  })
+  async getUserByField(
+    @Query() query: FindUserByFieldQueryDto,
+  ): Promise<UserDetailResponseDto> {
+    return this.authService.getUserByField(query);
+  }
 
   @Get('users/:id')
   @UseGuards(JwtAuthGuard)

@@ -40,4 +40,19 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       relations: ['role', 'customer', 'admin', 'warehouseOperator'],
     });
   }
+
+  async findByFieldWithAllRoles(filter:{email?: string; phone?:string}):Promise<User | null>{
+    const whereCondition: any={};
+    if(filter.email) whereCondition.email=filter.email;
+    if(filter.phone) whereCondition.phone=filter.phone;
+    if(Object.keys(whereCondition).length===0){
+      return null;
+    }
+
+    return this.repository.findOne({
+      where: whereCondition,
+      relations:['role','customer','admin','warehouseOperator'],
+    });
+  }
+
 }

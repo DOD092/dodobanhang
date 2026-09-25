@@ -10,6 +10,7 @@ import { GoogleAuth } from 'google-auth-library';
 import { GoogleAuthDto, GoogleAuthResponseDto } from '../dto/google-auth.dto';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from '../dto/create-staff-account.dto';
 import { GetUsersQueryDto, UserDetailResponseDto } from '../dto/get-users.dto';
+import { FindUserByFieldQueryDto } from '../dto/find-user-by-field.dto';
 export interface LoginResult {
   accessToken: string;
 }
@@ -38,5 +39,7 @@ export interface IAuthService {
   getAllUsers(query: GetUsersQueryDto): Promise<UserDetailResponseDto[]>;
 
   getUserById(targetUserId:string, currentUser:{id: string; role:string},):Promise<UserDetailResponseDto>
+
+  getUserByField(query: FindUserByFieldQueryDto): Promise<UserDetailResponseDto>;
 }
 

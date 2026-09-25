@@ -41,6 +41,7 @@ import { User } from '../user/entities/user.entity';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
+import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -357,6 +358,56 @@ export class AuthService implements IAuthService {
           status:userAny.warehouseOperator.status,
         }
         :undefined,
+    };
+  }
+
+  async getUserByField(query: FindUserByFieldQueryDto): Promise<UserDetailResponseDto>{
+    const {email, phone}=query;
+    if(!email && !phone){
+      throw new BadRequestException('Vui lòng nhập 1 trường để tìm kiếm')
+    }
+    const user = await this.userRepository.findByFieldWithAllRoles({ email, phone });
+    if(!user){
+      throw new NotFoundException('Không tìm thấy người dùng phù hợp');
+    }
+
+    const userAny= user as any;
+    const roleName=userAny.role?.name;
+    return {
+      id: userAny.id,
+      email: userAny.email,
+      fullName: userAny.fullName,
+      phone: userAny.phone ?? undefined,
+      role: roleName,
+      status: userAny.status,
+      createdAt: userAny.createdAt,
+
+      customerInfo:
+        roleName === 'CUSTOMER' && userAny.customer
+          ? {
+              customerCode: userAny.customer.customerCode,
+              loyaltyPoints: userAny.customer.loyaltyPoints ?? 0,
+            }
+          : undefined,
+
+      adminInfo:
+        roleName === 'ADMIN' && userAny.admin
+          ? {
+              employee_code: userAny.admin.employeeCode,
+              department: userAny.admin.department,
+              position: userAny.admin.position,
+            }
+          : undefined,
+
+      operatorInfo:
+        roleName === 'WAREHOUSE_OPERATOR' && userAny.warehouseOperator
+          ? {
+              employee_code: userAny.warehouseOperator.employeeCode,
+              warehouseId: userAny.warehouseOperator.warehouseId,
+              shift: userAny.warehouseOperator.shift,
+              status: userAny.warehouseOperator.status,
+            }
+          : undefined,
     };
   }
 }

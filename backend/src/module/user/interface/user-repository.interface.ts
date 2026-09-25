@@ -13,4 +13,5 @@ export interface IUserRepository {
   findByGoogleId(googleId:string,): Promise<User|null>;
   findAllWithDetails(roleFilter?: string): Promise<User[]>;
   findByIdWithAllRoles(id: string): Promise<User | null>;
+  findByFieldWithAllRoles(filter: { email?: string; phone?: string }): Promise<User | null>;
 }

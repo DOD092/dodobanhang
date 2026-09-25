@@ -1,6 +1,5 @@
 import { AutoMap } from '@automapper/classes';
 import {
-  Admin,
   Column,
   CreateDateColumn,
   Entity,
@@ -13,6 +12,7 @@ import {
 import { UserStatus } from '../../../common/enum/user-status.enum';
 import { Role } from '../../role/entities/role.entity';
 import { Customer } from 'src/module/customer/entities/customer.entity';
+import { Admin } from 'src/module/admin/entities/admin.entity';
 import { WarehouseOperator } from 'src/module/warehouse-operator/entities/warehouse-operator.entity';
 
 @Entity('users')
@@ -72,7 +72,8 @@ export class User {
   @OneToOne(() => Customer, (customer) => customer.user)
   customer?: Customer;
 
-  @OneToOne(() => Admin, (admin: any) => admin.user)
+  @OneToOne(() => Admin, (admin) => admin.user)
+  admin?: Admin;
 
   @OneToOne(()=> WarehouseOperator, (operator)=>operator.user)
   warehouseOperator?: WarehouseOperator
