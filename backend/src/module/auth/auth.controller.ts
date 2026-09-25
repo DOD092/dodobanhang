@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -64,6 +65,7 @@ export class AuthController {
     return this.authService.createCustomerRegister(dto);
   }
 
+  //Customer xác nhận tài khoản
   @Post('verify-email')
   @ApiOperation({
     summary: 'Verify customer email',
@@ -84,6 +86,7 @@ export class AuthController {
     return this.authService.resendVerificationCode(dto);
   }
 
+  //Quên mk
   @Post('forgot-password')
   @ApiOperation({
     summary: 'Send password reset code',
@@ -93,7 +96,7 @@ export class AuthController {
   ): Promise<ForgotPasswordResponseDto>{
     return this.authService.forgotPassword(dto);
   }
-
+  //Confirm quên mk
   @Post('reset-password')
   @ApiOperation({
     summary:'Reset password'
@@ -104,6 +107,8 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+
+  //Đổi mk
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('CUSTOMER','WAREHOUSE_OPERATOR','ADMIN',)
   @ApiBearerAuth()
@@ -121,6 +126,7 @@ export class AuthController {
   );
   }
 
+  //Tạo tài khoản operator, admin 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @ApiBearerAuth()
@@ -134,6 +140,7 @@ export class AuthController {
     return this.authService.createStaffAccount(dto);
   }
 
+  //Get all
   @Get('users')
   @UseGuards(JwtAuthGuard,RolesGuard)
   @Roles('ADMIN')
@@ -152,6 +159,7 @@ export class AuthController {
     return this.authService.getAllUsers(query)
   }
 
+  //Get by phone, email,...
   @Get('users/search')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
@@ -177,6 +185,7 @@ export class AuthController {
     return this.authService.getUserByField(query);
   }
 
+  //Get by id
   @Get('users/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -201,5 +210,37 @@ export class AuthController {
     @Req() req: any,
   ): Promise<UserDetailResponseDto> {
     return this.authService.getUserById(id, req.user);
+  }
+  //Get my account
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Lấy thông tin tài khoản đang đăng nhập (Tất cả role)',
+    description: 'Không cần truyền tham số, tự động lấy thông tin từ Access Token',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Thông tin tài khoản kèm dữ liệu theo role tương ứng',
+    type: UserDetailResponseDto,
+  })
+  async getMyAccount(@Req() req: any): Promise<UserDetailResponseDto> {
+    return this.authService.getUserById(req.user.id, req.user);
+  }
+
+  //hardDelete
+  @Delete('users/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin xóa vĩnh viễn (Hard Delete) một người dùng theo ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Xóa người dùng thành công' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Không tìm thấy người dùng' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Admin không được tự xóa chính mình' })
+  async hardDeleteUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+  ) {
+    return this.authService.hardDeleteUser(id, req.user.id);
   }
 }

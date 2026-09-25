@@ -410,4 +410,20 @@ export class AuthService implements IAuthService {
           : undefined,
     };
   }
+
+  async hardDeleteUser(targetUserId: string, currentUserId: string): Promise<{ message: string; }> {
+    //tránh admin tự xóa tài khoản bản thân   
+    if(targetUserId===currentUserId){
+        throw new BadRequestException('Bạn không thể xóa tài khoản của chính mình.');
+    }
+    const user=await this.userRepository.findById(targetUserId);
+    if(!user){
+      throw new NotFoundException('Không tìm thấy người dùng cần xóa.');
+    }
+    const isDeleted=await this.userRepository.hardDelete(targetUserId);
+    if(!isDeleted){
+      throw new InternalServerErrorException('Xóa người dùng thất bại.');
+    }
+    return {message:'Đã xóa vĩnh viễn người dùng thành công.'};
+  }
 }

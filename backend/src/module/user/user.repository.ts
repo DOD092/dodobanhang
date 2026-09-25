@@ -14,6 +14,10 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
   ) {
     super(repository, 'User');
   }
+  // Khác BaseRepository.findOne(): trả null thay vì ném 404, để service tự quyết thông báo lỗi.
+  findById(id: string): Promise<User | null> {
+    return this.repository.findOne({ where: { id } });
+  }
 
   findByEmail(email: string): Promise<User | null> {
     return this.repository.findOne({ where: { email }, relations: ['role'] });
@@ -53,6 +57,11 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       where: whereCondition,
       relations:['role','customer','admin','warehouseOperator'],
     });
+  }
+
+  async hardDelete(id: string): Promise<boolean> {
+      const result=await this.repository.delete(id);
+      return (result.affected??0)>0
   }
 
 }

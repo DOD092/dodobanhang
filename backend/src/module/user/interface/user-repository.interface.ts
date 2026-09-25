@@ -3,6 +3,7 @@ import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { User } from '../entities/user.entity';
 
 export interface IUserRepository {
+  findById(id: string): Promise<User | null>;
   findByIdWithAllRoles(targetUserId: string): unknown;
   create(dto: DeepPartial<User>): Promise<User>;
   findAll(pagination: PaginationQueryDto): Promise<User[]>;
@@ -14,4 +15,5 @@ export interface IUserRepository {
   findAllWithDetails(roleFilter?: string): Promise<User[]>;
   findByIdWithAllRoles(id: string): Promise<User | null>;
   findByFieldWithAllRoles(filter: { email?: string; phone?: string }): Promise<User | null>;
+  hardDelete(id: string): Promise<boolean>;
 }
