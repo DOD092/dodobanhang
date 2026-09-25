@@ -17,7 +17,7 @@ export class WarehouseOperator {
   @PrimaryColumn({ type: 'uuid', name: 'user_id' })
   userId: string;
 
-  @OneToOne(() => User, { onDelete: 'CASCADE' })
+  @OneToOne(() => User, (user) => user.warehouseOperator, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 

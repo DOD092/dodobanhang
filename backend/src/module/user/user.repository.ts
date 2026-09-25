@@ -33,4 +33,11 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       order:{createdAt:'DESC'as any},
     });
   }
+
+  async findByIdWithAllRoles(id: string): Promise<User | null> {
+    return this.repository.findOne({
+      where: { id },
+      relations: ['role', 'customer', 'admin', 'warehouseOperator'],
+    });
+  }
 }

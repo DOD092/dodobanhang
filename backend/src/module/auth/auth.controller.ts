@@ -5,6 +5,8 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -149,4 +151,30 @@ export class AuthController {
     return this.authService.getAllUsers(query)
   }
 
+
+  @Get('users/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Lấy chi tiết User theo ID (Admin xem tất cả, User chỉ xem chính mình)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Thông tin chi tiết user theo role',
+    type: UserDetailResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Không có quyền xem thông tin của người dùng khác',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy người dùng',
+  })
+  async getUserById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+  ): Promise<UserDetailResponseDto> {
+    return this.authService.getUserById(id, req.user);
+  }
 }

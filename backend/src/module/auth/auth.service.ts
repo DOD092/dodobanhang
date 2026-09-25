@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -39,6 +40,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
+import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -302,5 +304,59 @@ export class AuthService implements IAuthService {
             : undefined
       };
     });
+  }
+
+  async getUserById(
+    targetUserId:string,
+    currentUser:{id:string,role:string},
+  ): Promise<UserDetailResponseDto>{
+    const isAdmin=currentUser.role==='ADMIN';
+    const isOwner=currentUser.id===targetUserId;
+
+    if(!isAdmin&&isOwner){
+      throw new ForbiddenException('Bạn không có quyền.',);
+    }
+
+    const user= await this.userRepository.findByIdWithAllRoles(targetUserId)
+    if(!user){
+      throw new NotFoundException('Không tìm thất người dùng.');
+    }
+    const userAny = user as any;
+    const roleName = userAny.role?.name;
+    return{
+      id:userAny.id,
+      email:userAny.email,
+      fullName:userAny.fullName,
+      phone: userAny.phone??undefined,
+      role:roleName,
+      status:userAny.status,
+      createdAt:userAny.createdAt,
+
+      customerInfo:
+        roleName==='CUSTOMER'&& userAny.customer
+        ?{
+          customerCode:userAny.customer.customerCode,
+          loyaltyPoints:userAny.customer.loyalPoints>>0,
+        }
+        : undefined,
+      adminInfo:
+        roleName==='ADMIN'&& userAny.admin
+        ?{
+          employee_code: userAny.admin.employeeCode,
+          department: userAny.admin.department,
+          position: userAny.admin.position,
+        }
+        : undefined,
+
+      operatorInfo:
+        roleName==='WAREHOUSE_OPERATOR'&& userAny.warehouseOperator
+        ?{
+          employee_code: userAny.warehouseOperator.employeeCode,
+          warehouseId: userAny.warehouseOperator.warehouseId,
+          shift: userAny.warehouseOperator.shift,
+          status:userAny.warehouseOperator.status,
+        }
+        :undefined,
+    };
   }
 }

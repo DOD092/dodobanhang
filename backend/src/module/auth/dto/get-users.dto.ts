@@ -22,6 +22,33 @@ export class GetUsersQueryDto{
 export class CustomerInfoResponseDto{
     @ApiProperty()
     customerCode:string | undefined;
+    @ApiPropertyOptional()
+    loyaltyPoints?: number;
+}
+
+export class AdminInfoResponseDto {
+  @ApiProperty({ example: 'ADM-001' })
+  employee_code: string | undefined;
+
+  @ApiPropertyOptional({ example: 'IT' })
+  department?: string;
+
+  @ApiPropertyOptional({ example: 'Quản trị viên' })
+  position?: string;
+}
+
+export class WarehouseOperatorInfoResponseDto {
+  @ApiProperty({ example: 'WH-001' })
+  employee_code: string | undefined;
+
+  @ApiPropertyOptional({ example: 'uuid-kho' })
+  warehouseId?: string;
+
+  @ApiPropertyOptional({ example: 'CA_SANG' })
+  shift?: string;
+
+  @ApiPropertyOptional({ example: 'ACTIVE' })
+  status?: string;
 }
 
 export class UserDetailResponseDto{
@@ -46,9 +73,15 @@ export class UserDetailResponseDto{
     @ApiProperty()
     createdAt: Date | undefined;
 
-    @ApiPropertyOptional({
-        type: CustomerInfoResponseDto,
-        description: 'Chỉ hiển thị khi role là CUSTOMER'
-    })
+    // Dành cho Customer
+    @ApiPropertyOptional({ type: CustomerInfoResponseDto })
     customerInfo?: CustomerInfoResponseDto;
+
+     // Dành cho Admin (bổ sung)
+    @ApiPropertyOptional({ type: AdminInfoResponseDto })
+     adminInfo?: AdminInfoResponseDto;
+
+     // Dành cho Nhân viên kho (bổ sung)
+    @ApiPropertyOptional({ type: WarehouseOperatorInfoResponseDto })
+    operatorInfo?: WarehouseOperatorInfoResponseDto;
 }

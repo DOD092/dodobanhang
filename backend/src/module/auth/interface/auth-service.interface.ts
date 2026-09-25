@@ -36,5 +36,7 @@ export interface IAuthService {
   createStaffAccount(dto: CreateStaffAccountDto,): Promise<CreateStaffAccountResponseDto>;
 
   getAllUsers(query: GetUsersQueryDto): Promise<UserDetailResponseDto[]>;
+
+  getUserById(targetUserId:string, currentUser:{id: string; role:string},):Promise<UserDetailResponseDto>
 }
 
