@@ -44,6 +44,8 @@ export interface IAuthService {
 
   hardDeleteUser(targetUserId:string, currentUserId:string): Promise<{message:string}>;
 
-  softDeleteUser(targetUserId:string, currentUserId:string):  Promise<{message:string}>;
+  softDeleteUser(targetUserId:string, currentUserId:string): Promise<{message:string}>;
+
+  inactiveUser(targetUserId:string, currentUserId:string): Promise<{message:string}>;
 }
 

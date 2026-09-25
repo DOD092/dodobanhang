@@ -70,4 +70,11 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     })
     return (result.affected??0)>0;
   }
+
+  async updateUserStatus(id: string, status: string): Promise<boolean> {
+      const result=await this.repository.update(id,{
+        status: status as any,
+      })
+      return (result.affected ?? 0)>0;
+  }
 }

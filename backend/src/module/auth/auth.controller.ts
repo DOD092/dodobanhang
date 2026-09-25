@@ -263,4 +263,32 @@ export class AuthController {
   ) {
     return this.authService.softDeleteUser(id, req.user?.id || req.user?.userId);
   }
+
+  @Patch('users/:id/inactive')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin vô hiệu hóa (INACTIVE) tài khoản Customer hoặc Warehouse Operator',
+    description: 'Chỉ Admin mới có quyền thực hiện và chỉ áp dụng cho tài khoản role CUSTOMER hoặc WAREHOUSE_OPERATOR.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Vô hiệu hóa thành công',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Tài khoản không thuộc role hợp lệ, hoặc đang tự khóa chính mình/đã bị khóa trước đó',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy người dùng',
+  })
+  async inactiveUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+  ) {
+    const currentUserId = req.user?.id || req.user?.userId;
+    return this.authService.inactiveUser(id, currentUserId);
+  }
 }

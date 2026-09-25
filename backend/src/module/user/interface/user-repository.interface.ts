@@ -17,4 +17,5 @@ export interface IUserRepository {
   findByFieldWithAllRoles(filter: { email?: string; phone?: string }): Promise<User | null>;
   hardDelete(id: string): Promise<boolean>;
   softDelete(id: string): Promise<boolean>;
+  updateUserStatus(id: string, status: string): Promise<boolean>;
 }

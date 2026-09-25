@@ -42,6 +42,7 @@ import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/crea
 import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
 import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
+import { Not } from 'typeorm';
 @Injectable()
 export class AuthService implements IAuthService {
   constructor(
@@ -446,5 +447,35 @@ export class AuthService implements IAuthService {
       throw new InternalServerErrorException('Xóa người dùng thất bại.');
     }
     return { message: 'Đã vô hiệu hóa (xóa mềm) người dùng thành công.' };
+  }
+
+  async inactiveUser(targetUserId:string, currentUserId:string): Promise<{message:string}>{
+    if(targetUserId===currentUserId){
+      throw new BadRequestException('Bạn không thể tự khoá chính mình.');
+    }
+    const user=await this.userRepository.findByIdWithAllRoles(targetUserId);
+    if(!user){
+      throw new NotFoundException('Không tìm thấy người dùng cần khoá.');
+    }
+    const userAny=user as any;
+    const roleName=userAny.role?.name;
+
+    const allowedRoles=['CUSTOMER','WAREHOUSE_OPERATOR'];
+    if(!allowedRoles.includes(roleName)){
+      throw new BadRequestException('Chỉ được phép khoá tài khoản CUSTOMER hoặc WAREHOUSE_OPERATOR (Tài khoản này có vai trò: ${roleName}).')
+    }
+
+    if(userAny.status==='INACTIVE'){
+      throw new BadRequestException('Tài khoản này đã được INACTIVE.');
+    }
+    if(userAny.status==='DELETED'){
+      throw new BadRequestException('Tài khoản này đã bị xoá, không thể khoá.');
+    }
+
+    const isUpdated= await this.userRepository.updateUserStatus(targetUserId,'INACTIVE');
+    if(!isUpdated){
+      throw new InternalServerErrorException('Cập nhật trạng thái người dùng thất bại.');
+    }
+    return { message: `Đã vô hiệu hóa (INACTIVE) tài khoản ${roleName} thành công.` };
   }
 }
