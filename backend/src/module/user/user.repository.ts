@@ -64,4 +64,10 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
       return (result.affected??0)>0
   }
 
+  async softDelete(id: string): Promise<boolean>{
+    const result= await this.repository.update(id,{
+      status:'DELETED' as any,
+    })
+    return (result.affected??0)>0;
+  }
 }

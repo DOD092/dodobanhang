@@ -42,6 +42,8 @@ export interface IAuthService {
 
   getUserByField(query: FindUserByFieldQueryDto): Promise<UserDetailResponseDto>;
 
-  hardDeleteUser(targetUserId:string, currentUserId:string):Promise<{message:string}>;
+  hardDeleteUser(targetUserId:string, currentUserId:string): Promise<{message:string}>;
+
+  softDeleteUser(targetUserId:string, currentUserId:string):  Promise<{message:string}>;
 }
 

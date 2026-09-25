@@ -426,4 +426,25 @@ export class AuthService implements IAuthService {
     }
     return {message:'Đã xóa vĩnh viễn người dùng thành công.'};
   }
+
+  async softDeleteUser(targetUserId: string, currentUserId: string): Promise<{ message: string; }>{
+    if(targetUserId === currentUserId){
+      throw new BadRequestException('Bạn không thể tự vô hiệu hoá tài khoản của mình.');
+    }
+
+    const user = await this.userRepository.findByIdWithAllRoles(targetUserId);
+    if(!user){
+      throw new NotFoundException('Không tìm thấy người dùng cần xoá.');
+    }
+
+    if((user as any).status === 'DELETED'){
+      throw new BadRequestException('Tài khoản này đã bị xóa/vô hiệu hóa từ trước.');
+    }
+
+    const isUpdated= await this.userRepository.softDelete(targetUserId);
+    if(!isUpdated){
+      throw new InternalServerErrorException('Xóa người dùng thất bại.');
+    }
+    return { message: 'Đã vô hiệu hóa (xóa mềm) người dùng thành công.' };
+  }
 }

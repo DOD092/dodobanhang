@@ -8,6 +8,7 @@ import {
   Inject,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   Req,
@@ -242,5 +243,24 @@ export class AuthController {
     @Req() req: any,
   ) {
     return this.authService.hardDeleteUser(id, req.user.id);
+  }
+
+  //softDelete
+  @Patch('users/:id/soft-delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Admin xóa mềm (vô hiệu hóa) người dùng theo ID',
+    description: 'Cập nhật trạng thái người dùng thành DELETED mà không xóa mất dữ liệu trong DB',
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Xóa mềm thành công' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Không thể tự xóa chính mình hoặc tài khoản đã xóa' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Không tìm thấy người dùng' })
+  async softDeleteUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: any,
+  ) {
+    return this.authService.softDeleteUser(id, req.user?.id || req.user?.userId);
   }
 }
