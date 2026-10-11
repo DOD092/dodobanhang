@@ -9,4 +9,5 @@ export interface ICustomerRepository {
   findByUserId(userId: string): Promise<Customer | null>;
   update(userId: string, dto: DeepPartial<Customer>): Promise<Customer>;
   remove(userId: string): Promise<void>;
+  findByCodeWithUser(customerCode: string): Promise<Customer | null>;
 }

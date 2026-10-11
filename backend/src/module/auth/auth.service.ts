@@ -315,32 +315,32 @@ export class AuthService implements IAuthService {
     const isAdmin=currentUser.role==='ADMIN';
     const isOwner=currentUser.id===targetUserId;
 
-    if(!isAdmin&&isOwner){
-      throw new ForbiddenException('Bạn không có quyền.',);
+    if (!isAdmin && !isOwner) {
+      throw new ForbiddenException('Bạn không có quyền.');
     }
 
-    const user= await this.userRepository.findByIdWithAllRoles(targetUserId)
-    if(!user){
-      throw new NotFoundException('Không tìm thất người dùng.');
+    const user = await this.userRepository.findByIdWithAllRoles(targetUserId);
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng.');
     }
     const userAny = user as any;
     const roleName = userAny.role?.name;
-    return{
-      id:userAny.id,
-      email:userAny.email,
-      fullName:userAny.fullName,
-      phone: userAny.phone??undefined,
-      role:roleName,
-      status:userAny.status,
-      createdAt:userAny.createdAt,
+    return {
+      id: userAny.id,
+      email: userAny.email,
+      fullName: userAny.fullName,
+      phone: userAny.phone ?? undefined,
+      role: roleName,
+      status: userAny.status,
+      createdAt: userAny.createdAt,
 
       customerInfo:
-        roleName==='CUSTOMER'&& userAny.customer
-        ?{
-          customerCode:userAny.customer.customerCode,
-          loyaltyPoints:userAny.customer.loyalPoints>>0,
-        }
-        : undefined,
+        roleName === 'CUSTOMER' && userAny.customer
+          ? {
+              customerCode: userAny.customer.customerCode,
+              loyaltyPoints: userAny.customer.loyaltyPoints ?? 0,
+            }
+          : undefined,
       adminInfo:
         roleName==='ADMIN'&& userAny.admin
         ?{

@@ -11,11 +11,21 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CUSTOMER_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { GetCustomerByCodeResponseDto } from './dto/get-customer-by-code-response.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { ICustomerService } from './interface/customer-service.interface';
 
@@ -37,6 +47,26 @@ export class CustomerController {
   @ApiOperation({ summary: 'List customers (paginated)' })
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.customerService.findAll(pagination);
+  }
+
+  @Get('code/:customerCode')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get a Customer by customer code' })
+  @ApiParam({ name: 'customerCode', type: String })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    type: GetCustomerByCodeResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Không tìm thấy khách hàng với mã cung cấp',
+  })
+  getCustomerByCode(
+    @Param('customerCode') customerCode: string,
+    @Req() req: any,
+  ) {
+    return this.customerService.getCustomerByCode(customerCode, req.user);
   }
 
   @Get(':userId')

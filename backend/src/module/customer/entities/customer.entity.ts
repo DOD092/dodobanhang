@@ -34,5 +34,4 @@ export class Customer {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
-  id: any;
 }

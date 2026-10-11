@@ -1,7 +1,14 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CUSTOMER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { GetCustomerByCodeResponseDto } from './dto/get-customer-by-code-response.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 import { ICustomerRepository } from './interface/customer-repository.interface';
@@ -40,5 +47,40 @@ export class CustomerService implements ICustomerService {
 
   remove(userId: string): Promise<void> {
     return this.customerRepository.remove(userId);
+  }
+
+  async getCustomerByCode(
+    customerCode: string,
+    currentUser?: any,
+  ): Promise<GetCustomerByCodeResponseDto> {
+    const customer = await this.customerRepository.findByCodeWithUser(customerCode);
+
+    if (!customer) {
+      throw new NotFoundException(`Không tìm thấy khách hàng với mã: ${customerCode}`);
+    }
+
+    if (currentUser) {
+      const roleName = currentUser.role?.name || currentUser.role;
+      const isAdmin = roleName === 'ADMIN';
+      const isWarehouse = roleName === 'WAREHOUSE_OPERATOR';
+      const isOwner = currentUser.id === customer.userId;
+
+      if (!isAdmin && !isWarehouse && !isOwner) {
+        throw new ForbiddenException('Bạn không có quyền xem thông tin khách hàng này');
+      }
+    }
+
+    const user = customer.user;
+
+    return {
+      id: customer.userId,
+      email: user?.email,
+      fullName: user?.fullName,
+      phone: user?.phone ?? undefined,
+      status: user?.status,
+      customerCode: customer.customerCode,
+      loyaltyPoints: customer.loyaltyPoints ?? 0,
+      createdAt: customer.createdAt,
+    };
   }
 }

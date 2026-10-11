@@ -20,4 +20,11 @@ export class CustomerRepository
   findByUserId(userId: string): Promise<Customer | null> {
     return this.repository.findOne({ where: { userId } });
   }
+
+  async findByCodeWithUser(customerCode: string): Promise<Customer | null> {
+    return this.repository.findOne({
+      where: { customerCode },
+      relations: ['user'],
+    });
+  }
 }
