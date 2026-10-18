@@ -27,4 +27,11 @@ export class CustomerRepository
       relations: ['user'],
     });
   }
+
+  async findByUserIdWithUser(userId: string): Promise<Customer | null> {
+    return this.repository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+  }
 }

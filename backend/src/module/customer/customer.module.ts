@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CUSTOMER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { CUSTOMER_SERVICE } from '../../common/dependency-injection/service.tokens';
+import { UserModule } from '../user/user.module';   // ← thêm
 import { Customer } from './entities/customer.entity';
 import { CustomerController } from './customer.controller';
 import { CustomerRepository } from './customer.repository';
 import { CustomerService } from './customer.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer])], 
+  imports: [TypeOrmModule.forFeature([Customer]), UserModule],
   controllers: [CustomerController],
   providers: [
     { provide: CUSTOMER_SERVICE, useClass: CustomerService },
