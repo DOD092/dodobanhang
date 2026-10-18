@@ -6,9 +6,13 @@ import { Admin } from './entities/admin.entity';
 import { AdminController } from './admin.controller';
 import { AdminRepository } from './admin.repository';
 import { AdminService } from './admin.service';
+import { CustomerModule } from '../customer/customer.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Admin])], // Dòng này quyết định việc sinh bảng
+  imports: [
+    TypeOrmModule.forFeature([Admin]), // Dòng này quyết định việc sinh bảng
+    CustomerModule,
+  ],
   controllers: [AdminController],
   providers: [
     { provide: ADMIN_SERVICE, useClass: AdminService },

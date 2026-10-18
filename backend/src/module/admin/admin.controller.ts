@@ -11,10 +11,23 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { ADMIN_SERVICE } from '../../common/dependency-injection/service.tokens';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { ADMIN_SERVICE, CUSTOMER_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { GetCustomerByCodeResponseDto } from '../customer/dto/get-customer-by-code-response.dto';
+import { ICustomerService } from '../customer/interface/customer-service.interface';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { IAdminService } from './interface/admin-service.interface';
@@ -24,6 +37,8 @@ import { IAdminService } from './interface/admin-service.interface';
 export class AdminController {
   constructor(
     @Inject(ADMIN_SERVICE) private readonly adminService: IAdminService,
+    @Inject(CUSTOMER_SERVICE)
+    private readonly customerService: ICustomerService,
   ) {}
 
   @Post()
@@ -36,6 +51,21 @@ export class AdminController {
   @ApiOperation({ summary: 'List admins (paginated)' })
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.adminService.findAll(pagination);
+  }
+
+  @Get('customers/code/:customerCode')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin tra cứu thông tin customer theo mã' })
+  @ApiParam({ name: 'customerCode', type: String })
+  @ApiResponse({ status: HttpStatus.OK, type: GetCustomerByCodeResponseDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Không tìm thấy khách hàng' })
+  getCustomerByCode(
+    @Param('customerCode') customerCode: string,
+    @Req() req: any,
+  ) {
+    return this.customerService.getCustomerByCode(customerCode, req.user);
   }
 
   @Get(':userId')
