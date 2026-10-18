@@ -7,7 +7,7 @@ import {
   MaxLength,
 } from 'class-validator';
 
-export class UpdateCustomerProfileDto {
+export class UpdateProfileDto{
   @ApiPropertyOptional({ maxLength: 150 })
   @IsOptional() @IsString() @IsNotEmpty() @MaxLength(150)
   fullName?: string;

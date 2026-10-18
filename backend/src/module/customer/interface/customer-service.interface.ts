@@ -1,8 +1,8 @@
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
-import { CustomerProfileResponseDto } from '../dto/customer-profile-response.dto';   // ← thêm
+import { UpdateProfileDto } from '../../user/dto/update-profile.dto';
+import { CustomerProfileResponseDto } from '../dto/customer-profile-response.dto';
 import { GetCustomerByCodeResponseDto } from '../dto/get-customer-by-code-response.dto';
-import { UpdateCustomerProfileDto } from '../dto/update-customer-profile.dto';       // ← thêm
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { Customer } from '../entities/customer.entity';
 
@@ -18,10 +18,10 @@ export interface ICustomerService {
   ): Promise<GetCustomerByCodeResponseDto>;
   updateMyProfile(
     userId: string,
-    dto: UpdateCustomerProfileDto,
+    dto: UpdateProfileDto,
   ): Promise<CustomerProfileResponseDto>;
   updateMyAvatar(
     userId: string,
     file: Express.Multer.File,
   ): Promise<{ avatarUrl: string }>;
-}   // ← dấu đóng interface phải nằm SAU cùng
+}

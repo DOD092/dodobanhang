@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { USER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
@@ -7,6 +7,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { IUserRepository } from './interface/user-repository.interface';
 import { IUserService } from './interface/user-service.interface';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { AVATAR_URL_PREFIX } from '../../common/upload/avatar-upload.options';
+import * as fs from 'fs';
+import { join } from 'path';
 
 const SALT_ROUNDS = 10;
 
@@ -45,4 +49,30 @@ export class UserService implements IUserService {
   remove(id: string): Promise<void> {
     return this.userRepository.remove(id);
   }
+
+  updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+  const { dateOfBirth, ...rest } = dto;
+  return this.userRepository.update(userId, {
+    ...rest,
+    ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
+  });
+}
+
+async updateAvatar(userId: string, file: Express.Multer.File): Promise<{ avatarUrl: string }> {
+  if (!file) {
+    throw new BadRequestException('Vui lòng chọn ảnh');
+  }
+
+  const user = await this.userRepository.findOne(userId);
+  const oldUrl = user.avatarUrl;
+
+  const avatarUrl = `${AVATAR_URL_PREFIX}${file.filename}`;
+  await this.userRepository.update(userId, { avatarUrl });
+
+  if (oldUrl?.startsWith(AVATAR_URL_PREFIX)) {
+    await fs.promises.unlink(join(process.cwd(), oldUrl)).catch(() => {});
+  }
+  return { avatarUrl };
+}
+
 }

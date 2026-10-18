@@ -1,32 +1,31 @@
 import {
-  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CUSTOMER_REPOSITORY, USER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
+import { CUSTOMER_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
+import { USER_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { UpdateProfileDto } from '../user/dto/update-profile.dto';
+import { IUserService } from '../user/interface/user-service.interface';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { CustomerProfileResponseDto } from './dto/customer-profile-response.dto';
 import { GetCustomerByCodeResponseDto } from './dto/get-customer-by-code-response.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Customer } from './entities/customer.entity';
 import { ICustomerRepository } from './interface/customer-repository.interface';
 import { ICustomerService } from './interface/customer-service.interface';
-import { IUserRepository } from '../user/interface/user-repository.interface';
-import { CustomerProfileResponseDto } from './dto/customer-profile-response.dto';
-import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
-import * as fs from 'fs';
-import { join } from 'path';
+
 @Injectable()
 export class CustomerService implements ICustomerService {
   constructor(
-  @Inject(CUSTOMER_REPOSITORY)
-  private readonly customerRepository: ICustomerRepository,
-  @Inject(USER_REPOSITORY)
-  private readonly userRepository: IUserRepository,
-) {}
+    @Inject(CUSTOMER_REPOSITORY)
+    private readonly customerRepository: ICustomerRepository,
+    @Inject(USER_SERVICE)
+    private readonly userService: IUserService,
+  ) {}
 
   async create(dto: CreateCustomerDto): Promise<Customer> {
     // Khoá chính do client truyền lên, mà save() với PK đã tồn tại sẽ thành
@@ -95,66 +94,48 @@ export class CustomerService implements ICustomerService {
   }
 
   async updateMyProfile(
-  userId: string,
-  dto: UpdateCustomerProfileDto,
+    userId: string,
+    dto: UpdateProfileDto,
   ): Promise<CustomerProfileResponseDto> {
-  const customer = await this.customerRepository.findByUserId(userId);
-  if (!customer) {
-    throw new NotFoundException('Không tìm thấy hồ sơ khách hàng');
+    await this.ensureCustomer(userId);
+    await this.userService.updateProfile(userId, dto);
+    return this.getProfile(userId);
   }
 
-  // DTO nhận dateOfBirth dạng string '2004-02-09', còn entity là Date,
-  // nên tách ra để đổi kiểu, phần còn lại giữ nguyên.
-  const { dateOfBirth, ...rest } = dto;
-  await this.userRepository.update(userId, {
-    ...rest,
-    ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
-  });
-
-  return this.getProfile(userId);
-}
-
-async updateMyAvatar(
-  userId: string,
-  file: Express.Multer.File,
-): Promise<{ avatarUrl: string }> {
-  if (!file) {
-    throw new BadRequestException('Vui lòng chọn ảnh');
+  async updateMyAvatar(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{ avatarUrl: string }> {
+    await this.ensureCustomer(userId);
+    return this.userService.updateAvatar(userId, file);
   }
 
-  const user = await this.userRepository.findOne(userId);
-  const oldUrl = user.avatarUrl;
-
-  const avatarUrl = `/uploads/avatars/${file.filename}`;
-  await this.userRepository.update(userId, { avatarUrl });
-
-  // Xoá ảnh cũ sau khi ghi DB thành công; chỉ xoá file do mình lưu,
-  // ảnh từ Google là URL ngoài (https://...) thì bỏ qua.
-  if (oldUrl?.startsWith('/uploads/avatars/')) {
-    await fs.promises.unlink(join(process.cwd(), oldUrl)).catch(() => {});
+  // Thông tin profile nằm ở bảng users (UserService lo phần ghi); ở đây chỉ
+  // chặn trường hợp token hợp lệ nhưng user không có hồ sơ customer.
+  private async ensureCustomer(userId: string): Promise<void> {
+    const customer = await this.customerRepository.findByUserId(userId);
+    if (!customer) {
+      throw new NotFoundException('Không tìm thấy hồ sơ khách hàng');
+    }
   }
 
-  return { avatarUrl };
-}
+  private async getProfile(userId: string): Promise<CustomerProfileResponseDto> {
+    const customer = await this.customerRepository.findByUserIdWithUser(userId);
+    if (!customer) {
+      throw new NotFoundException('Không tìm thấy hồ sơ khách hàng');
+    }
 
-private async getProfile(userId: string): Promise<CustomerProfileResponseDto> {
-  const customer = await this.customerRepository.findByUserIdWithUser(userId);
-  if (!customer) {
-    throw new NotFoundException('Không tìm thấy hồ sơ khách hàng');
+    const user = customer.user;
+    return {
+      id: customer.userId,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone ?? undefined,
+      avatarUrl: user.avatarUrl,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      customerCode: customer.customerCode,
+      loyaltyPoints: customer.loyaltyPoints,
+    };
   }
-
-  const user = customer.user;
-  return {
-    id: customer.userId,
-    email: user.email,
-    fullName: user.fullName,
-    phone: user.phone ?? undefined,
-    avatarUrl: user.avatarUrl,
-    dateOfBirth: user.dateOfBirth,
-    gender: user.gender,
-    customerCode: customer.customerCode,
-    loyaltyPoints: customer.loyaltyPoints,
-  };
-}
-
 }

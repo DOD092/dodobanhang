@@ -13,9 +13,8 @@ import {
   Query,
   Req,
   UseGuards,
-  UploadedFile, 
-  UseInterceptors, 
-  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -34,14 +33,11 @@ import { GetCustomerByCodeResponseDto } from './dto/get-customer-by-code-respons
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { ICustomerService } from './interface/customer-service.interface';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { randomUUID } from 'crypto';
-import * as fs from 'fs';
-import { extname, join } from 'path';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { avatarUploadOptions } from '../../common/upload/avatar-upload.options';
+import { UpdateProfileDto } from '../user/dto/update-profile.dto';
 import { CustomerProfileResponseDto } from './dto/customer-profile-response.dto';
-import { UpdateCustomerProfileDto } from './dto/update-customer-profile.dto';
 
 @ApiTags('customers')
 @Controller('customers')
@@ -69,7 +65,7 @@ export class CustomerController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Customer tự cập nhật thông tin cá nhân' })
   @ApiResponse({ status: HttpStatus.OK, type: CustomerProfileResponseDto })
-  updateMyProfile(@Req() req: any, @Body() dto: UpdateCustomerProfileDto) {
+  updateMyProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     return this.customerService.updateMyProfile(req.user.id, dto);
   }
 
@@ -86,29 +82,7 @@ export class CustomerController {
       properties: { avatar: { type: 'string', format: 'binary' } },
     },
   })
-  @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          const dir = join(process.cwd(), 'uploads', 'avatars');
-          fs.mkdirSync(dir, { recursive: true });
-          cb(null, dir);
-        },
-        filename: (_req, file, cb) =>
-          cb(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`),
-      }),
-      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-      fileFilter: (_req, file, cb) => {
-        if (!/^image\/(jpeg|png|webp)$/.test(file.mimetype)) {
-          return cb(
-            new BadRequestException('Chỉ chấp nhận ảnh jpg, png, webp'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-    }),
-  )
+  @UseInterceptors(FileInterceptor('avatar', avatarUploadOptions))
   updateMyAvatar(
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
