@@ -7,11 +7,14 @@ import { WarehouseOperatorController } from './warehouse-operator.controller';
 import { WarehouseOperatorRepository } from './warehouse-operator.repository';
 import { WarehouseOperatorService } from './warehouse-operator.service';
 import { CustomerModule } from '../customer/customer.module';
+import { UserModule } from '../user/user.module';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([WarehouseOperator]),
+    TypeOrmModule.forFeature([WarehouseOperator]), // Dòng này quyết định việc sinh bảng
     CustomerModule,
-  ], // Dòng này quyết định việc sinh bảng
+    UserModule,
+  ],
   controllers: [WarehouseOperatorController],
   providers: [
     { provide: WAREHOUSE_OPERATOR_SERVICE, useClass: WarehouseOperatorService },

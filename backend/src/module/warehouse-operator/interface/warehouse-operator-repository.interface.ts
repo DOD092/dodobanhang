@@ -7,6 +7,7 @@ export interface IWarehouseOperatorRepository {
   findAll(pagination: PaginationQueryDto): Promise<WarehouseOperator[]>;
   findOne(userId: string): Promise<WarehouseOperator>;
   findByUserId(userId: string): Promise<WarehouseOperator | null>;
+  findByUserIdWithUser(userId: string): Promise<WarehouseOperator | null>;
   update(
     userId: string,
     dto: DeepPartial<WarehouseOperator>,

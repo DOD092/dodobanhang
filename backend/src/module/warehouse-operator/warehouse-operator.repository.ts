@@ -20,4 +20,11 @@ export class WarehouseOperatorRepository
   findByUserId(userId: string): Promise<WarehouseOperator | null> {
     return this.repository.findOne({ where: { userId } });
   }
+
+  findByUserIdWithUser(userId: string): Promise<WarehouseOperator | null> {
+    return this.repository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+  }
 }
