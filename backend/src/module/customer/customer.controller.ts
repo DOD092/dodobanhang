@@ -120,7 +120,10 @@ export class CustomerController {
   @Get('code/:customerCode')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get a Customer by customer code' })
+  @ApiOperation({
+    summary: 'Get a Customer by customer code',
+    description: 'ADMIN / WAREHOUSE_OPERATOR xem mọi customer; CUSTOMER chỉ xem được chính mình',
+  })
   @ApiParam({ name: 'customerCode', type: String })
   @ApiResponse({
     status: HttpStatus.OK,

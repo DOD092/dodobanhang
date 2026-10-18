@@ -11,6 +11,15 @@ export class GetCustomerByCodeResponseDto {
     fullName: string;
 
     @ApiPropertyOptional()
+    avatarUrl?: string;
+
+    @ApiPropertyOptional()
+    dateOfBirth?: Date;
+
+    @ApiPropertyOptional()
+    gender?: string;
+
+    @ApiPropertyOptional()
     phone?: string;
 
     @ApiProperty()
