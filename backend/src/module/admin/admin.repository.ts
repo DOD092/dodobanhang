@@ -20,4 +20,11 @@ export class AdminRepository
   findByUserId(userId: string): Promise<Admin | null> {
     return this.repository.findOne({ where: { userId } });
   }
+
+  findByUserIdWithUser(userId: string): Promise<Admin | null> {
+    return this.repository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+  }
 }

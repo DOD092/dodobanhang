@@ -7,6 +7,7 @@ export interface IAdminRepository {
   findAll(pagination: PaginationQueryDto): Promise<Admin[]>;
   findOne(userId: string): Promise<Admin>;
   findByUserId(userId: string): Promise<Admin | null>;
+  findByUserIdWithUser(userId: string): Promise<Admin | null>;
   update(userId: string, dto: DeepPartial<Admin>): Promise<Admin>;
   remove(userId: string): Promise<void>;
 }

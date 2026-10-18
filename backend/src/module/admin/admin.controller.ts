@@ -12,10 +12,15 @@ import {
   Post,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -26,8 +31,11 @@ import { ADMIN_SERVICE, CUSTOMER_SERVICE } from '../../common/dependency-injecti
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { avatarUploadOptions } from '../../common/upload/avatar-upload.options';
 import { GetCustomerByCodeResponseDto } from '../customer/dto/get-customer-by-code-response.dto';
 import { ICustomerService } from '../customer/interface/customer-service.interface';
+import { UpdateProfileDto } from '../user/dto/update-profile.dto';
+import { AdminProfileResponseDto } from './dto/admin-profile-response.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { IAdminService } from './interface/admin-service.interface';
@@ -66,6 +74,37 @@ export class AdminController {
     @Req() req: any,
   ) {
     return this.customerService.getCustomerByCode(customerCode, req.user);
+  }
+
+  @Patch('me/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin tự cập nhật thông tin cá nhân' })
+  @ApiResponse({ status: HttpStatus.OK, type: AdminProfileResponseDto })
+  updateMyProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+    return this.adminService.updateMyProfile(req.user.id, dto);
+  }
+
+  @Patch('me/avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin đổi ảnh đại diện' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['avatar'],
+      properties: { avatar: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(FileInterceptor('avatar', avatarUploadOptions))
+  updateMyAvatar(
+    @Req() req: any,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.adminService.updateMyAvatar(req.user.id, file);
   }
 
   @Get(':userId')

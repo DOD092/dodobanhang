@@ -7,11 +7,13 @@ import { AdminController } from './admin.controller';
 import { AdminRepository } from './admin.repository';
 import { AdminService } from './admin.service';
 import { CustomerModule } from '../customer/customer.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Admin]), // Dòng này quyết định việc sinh bảng
     CustomerModule,
+    UserModule,
   ],
   controllers: [AdminController],
   providers: [
