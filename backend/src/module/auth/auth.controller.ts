@@ -12,16 +12,23 @@ import {
   Post,
   Query,
   Req,
+  Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { GoogleAuthDto, GoogleAuthResponseDto } from './dto/google-auth.dto';
 import { AUTH_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { CustomerRegisterRequestDto } from './dto/customer-register-request.dto';
 import { CustomerRegisterResponseDto } from './dto/customer-register-response.dto';
@@ -52,6 +59,61 @@ export class AuthController {
   })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  // Mở thẳng trên trình duyệt (không gọi qua Swagger "Try it out" được vì
+  // fetch không đi theo redirect sang domain Google).
+  @Get('google/login')
+  @ApiOperation({
+    summary: 'Chuyển hướng sang trang đăng nhập Google',
+    description:
+      'Mở http://localhost:3000/api/auth/google/login trên trình duyệt. ' +
+      'Đăng nhập xong Google sẽ gọi lại /api/auth/google/callback.',
+  })
+  @ApiResponse({ status: HttpStatus.FOUND, description: 'Redirect sang Google' })
+  googleLogin(@Res() res: Response): void {
+    // Dùng @Res thay vì @Redirect(): TransformResponseInterceptor bọc giá trị
+    // trả về thành { data: ... } nên @Redirect() sẽ không đọc được url.
+    res.redirect(this.authService.getGoogleAuthUrl());
+  }
+
+  @Get('google/callback')
+  @ApiOperation({
+    summary: 'Google gọi lại sau khi đăng nhập (không gọi tay)',
+    description:
+      'Google tự redirect trình duyệt về đây. Mỗi code chỉ dùng được 1 lần, ' +
+      'nên copy URL cũ dán lại sẽ báo lỗi — hãy mở lại /api/auth/google/login.',
+  })
+  @ApiQuery({ name: 'error', required: false })
+  @ApiOkResponse({ type: GoogleAuthResponseDto })
+  googleCallback(
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Query('error') error?: string,
+  ): Promise<GoogleAuthResponseDto> {
+    // Người dùng bấm "Huỷ" trên trang Google -> ?error=access_denied
+    if (error || !code || !state) {
+      throw new UnauthorizedException(
+        error === 'access_denied'
+          ? 'Bạn đã huỷ đăng nhập Google.'
+          : 'Thiếu mã xác thực từ Google.',
+      );
+    }
+    return this.authService.googleCallback(code, state);
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Customer đăng nhập / đăng ký bằng Google',
+    description:
+      'Gửi ID token (response.credential) lấy từ Google Identity Services. ' +
+      'Chưa có tài khoản thì tự tạo customer mới.',
+  })
+  @ApiOkResponse({ type: GoogleAuthResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Google token không hợp lệ' })
+  googleAuth(@Body() dto: GoogleAuthDto): Promise<GoogleAuthResponseDto> {
+    return this.authService.googleAuth(dto);
   }
 
   @Post('register')

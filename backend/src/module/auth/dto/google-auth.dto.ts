@@ -1,19 +1,33 @@
-import{ApiProperty} from '@nestjs/swagger';
-import { SpawnSyncOptionsWithBufferEncoding } from 'child_process';
-import{IsString} from 'class-validator';
-import { StringLiteral } from 'typescript';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString } from 'class-validator';
 
-export class GoogleAuthDto{
-    @ApiProperty()
-    @IsString()
-    credential !: string;
+export class GoogleAuthDto {
+  // ID token (JWT) do Google Identity Services trả về cho frontend
+  // trong callback: response.credential
+  @ApiProperty({ description: 'Google ID token (response.credential)' })
+  @IsString()
+  @IsNotEmpty()
+  credential!: string;
 }
 
-export class GoogleAuthResponseDto{
-    accessToken !: string;
-    user !:{
-        id: string;
-        email: string;
-        fullName: string 
-    };
+export class GoogleAuthUserDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  email!: string;
+
+  @ApiProperty()
+  fullName!: string;
+}
+
+export class GoogleAuthResponseDto {
+  @ApiProperty()
+  accessToken!: string;
+
+  @ApiProperty({ description: 'true nếu lần này vừa tạo tài khoản mới' })
+  isNewUser!: boolean;
+
+  @ApiProperty({ type: GoogleAuthUserDto })
+  user!: GoogleAuthUserDto;
 }

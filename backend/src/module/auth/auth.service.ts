@@ -45,6 +45,10 @@ import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
 import { Not } from 'typeorm';
 @Injectable()
 export class AuthService implements IAuthService {
+  // Tạo 1 lần dùng chung: client tự cache public key của Google để verify
+  // chữ ký ID token, không phải gọi mạng lại mỗi request.
+  private readonly googleClient: OAuth2Client;
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     @Inject(CUSTOMER_REPOSITORY)
@@ -56,10 +60,197 @@ export class AuthService implements IAuthService {
     private readonly configService: ConfigService,
     // UnitOfWorkModule là @Global nên inject thẳng, không cần import module.
     private readonly unitOfWork: UnitOfWork,
-  ) {}
-  
-  googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto> {
-    throw new Error('Method not implemented.');
+  ) {
+    // client secret + redirect uri chỉ cần cho luồng redirect (getGoogleAuthUrl /
+    // googleCallback). Luồng POST /auth/google chỉ cần client id.
+    this.googleClient = new OAuth2Client({
+      clientId: this.configService.get<string>('GOOGLE_CLIENT_ID'),
+      clientSecret: this.configService.get<string>('GOOGLE_CLIENT_SECRET'),
+      redirectUri: this.configService.get<string>('GOOGLE_CALLBACK_URL'),
+    });
+  }
+
+  // Luồng redirect, bước 1: tạo URL trang đăng nhập của Google.
+  getGoogleAuthUrl(): string {
+    return this.googleClient.generateAuthUrl({
+      // Truyền tường minh + getOrThrow: thiếu biến thì báo lỗi ngay ở server,
+      // thay vì để Google trả "Missing required parameter: redirect_uri".
+      redirect_uri: this.configService.getOrThrow<string>('GOOGLE_CALLBACK_URL'),
+      scope: ['openid', 'email', 'profile'],
+      prompt: 'select_account', // luôn hiện màn chọn tài khoản Google
+      state: this.signGoogleState(),
+    });
+  }
+
+  // Luồng redirect, bước 2: Google gọi lại kèm ?code=&state=.
+  // Đổi code lấy ID token rồi đi chung đường với POST /auth/google.
+  async googleCallback(
+    code: string,
+    state: string,
+  ): Promise<GoogleAuthResponseDto> {
+    this.verifyGoogleState(state);
+
+    let idToken: string | null | undefined;
+    try {
+      const { tokens } = await this.googleClient.getToken(code);
+      idToken = tokens.id_token;
+    } catch {
+      throw new UnauthorizedException('Mã xác thực Google không hợp lệ hoặc đã dùng.');
+    }
+    if (!idToken) {
+      throw new UnauthorizedException('Google không trả về ID token.');
+    }
+    return this.googleAuth({ credential: idToken });
+  }
+
+  // state chống CSRF: chỉ chấp nhận callback có state do chính server ký, còn
+  // hạn 10 phút. Ký bằng secret riêng để state không dùng được làm access token.
+  private signGoogleState(): string {
+    return this.jwtService.sign(
+      { nonce: randomBytes(16).toString('hex') },
+      { secret: this.googleStateSecret(), expiresIn: '10m' },
+    );
+  }
+
+  private verifyGoogleState(state: string): void {
+    try {
+      this.jwtService.verify(state, { secret: this.googleStateSecret() });
+    } catch {
+      throw new UnauthorizedException('Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn.');
+    }
+  }
+
+  private googleStateSecret(): string {
+    return `${this.configService.getOrThrow<string>('JWT_SECRET')}:google-oauth-state`;
+  }
+
+  /**
+   * Đăng nhập / đăng ký customer bằng Google trong cùng 1 endpoint.
+   * 3 trường hợp:
+   *   1. Đã có user gắn googleId này          -> đăng nhập
+   *   2. Có user cùng email nhưng chưa gắn    -> gắn googleId rồi đăng nhập
+   *   3. Chưa có gì                           -> tạo user + customer
+   */
+  async googleAuth(dto: GoogleAuthDto): Promise<GoogleAuthResponseDto> {
+    const payload = await this.verifyGoogleToken(dto.credential);
+    const googleId = payload.sub;
+    const email = payload.email!.toLowerCase();
+
+    let isNewUser = false;
+    let user = await this.userRepository.findByGoogleId(googleId);
+
+    if (!user) {
+      user = await this.userRepository.findByEmail(email);
+      if (user) {
+        // Google đã xác minh email -> chứng minh được người này sở hữu email,
+        // nên an toàn khi gắn vào tài khoản đăng ký bằng form trước đó.
+        // Nếu tài khoản đang chờ nhập mã xác thực email thì kích hoạt luôn.
+        const isPendingVerification =
+          user.status === UserStatus.INACTIVE && user.verificationCode !== null;
+        await this.userRepository.update(user.id, {
+          googleId,
+          ...(isPendingVerification && {
+            status: UserStatus.ACTIVE,
+            verificationCode: null,
+            verificationExpireAt: null,
+          }),
+        });
+        user = await this.userRepository.findByGoogleId(googleId);
+      } else {
+        user = await this.createGoogleCustomer(payload);
+        isNewUser = true;
+      }
+    }
+
+    this.assertCanLogin(user!);
+
+    const jwtPayload: JwtPayload = {
+      sub: user!.id,
+      email: user!.email,
+      role: user!.role.name,
+    };
+
+    return {
+      accessToken: this.jwtService.sign(jwtPayload),
+      isNewUser,
+      user: { id: user!.id, email: user!.email, fullName: user!.fullName },
+    };
+  }
+
+  // KHÔNG được tin email/name client gửi lên — chỉ tin những gì nằm trong
+  // ID token đã được verify chữ ký của Google và đúng audience (client id của mình).
+  private async verifyGoogleToken(credential: string): Promise<TokenPayload> {
+    let ticket: LoginTicket;
+    try {
+      ticket = await this.googleClient.verifyIdToken({
+        idToken: credential,
+        audience: this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+      });
+    } catch {
+      throw new UnauthorizedException('Google token không hợp lệ hoặc đã hết hạn.');
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload?.email || !payload.email_verified) {
+      throw new UnauthorizedException('Email Google chưa được xác minh.');
+    }
+    return payload;
+  }
+
+  // users + customers phải cùng thành công hoặc cùng rollback, nên bọc
+  // UnitOfWork. Nếu insert customer lỗi mà user đã ghi, lần sau đăng nhập
+  // sẽ có user CUSTOMER mà không có profile customer.
+  private async createGoogleCustomer(payload: TokenPayload): Promise<User> {
+    const customerRole = await this.roleRepository.findByName(RoleName.CUSTOMER);
+    if (!customerRole) {
+      throw new InternalServerErrorException(
+        'Chưa có role CUSTOMER trong bảng roles.',
+      );
+    }
+
+    await this.unitOfWork.execute(async (manager) => {
+      const userRepo = this.unitOfWork.getRepository(manager, User);
+      const customerRepo = this.unitOfWork.getRepository(manager, Customer);
+
+      const user = await userRepo.save(
+        userRepo.create({
+          email: payload.email!.toLowerCase(),
+          fullName: payload.name ?? payload.email!,
+          avatarUrl: payload.picture,
+          googleId: payload.sub,
+          passwordHash: null, // tài khoản chỉ đăng nhập bằng Google
+          phone: null,
+          roleId: customerRole.id,
+          // Google đã xác minh email nên không cần bước nhập mã 6 số
+          status: UserStatus.ACTIVE,
+          verificationCode: null,
+          verificationExpireAt: null,
+        }),
+      );
+
+      await customerRepo.save(
+        customerRepo.create({
+          userId: user.id,
+          customerCode: this.generateCustomerCode(),
+        }),
+      );
+    });
+
+    // Đọc lại sau khi transaction commit để có quan hệ role cho JWT payload.
+    return (await this.userRepository.findByGoogleId(payload.sub))!;
+  }
+
+  // INACTIVE có 2 nghĩa trong hệ thống: chờ xác thực email (verificationCode
+  // còn giá trị — đã xử lý ở trên) và bị admin khoá (verificationCode = null).
+  private assertCanLogin(user: User): void {
+    const status = user.status as string;
+    if (
+      status === UserStatus.BLOCKED ||
+      status === 'DELETED' ||
+      status === UserStatus.INACTIVE
+    ) {
+      throw new ForbiddenException('Tài khoản đã bị khoá hoặc vô hiệu hoá.');
+    }
   }
   async login(dto: LoginDto): Promise<LoginResult> {
     const user = await this.userRepository.findByEmail(dto.email);
@@ -286,26 +477,7 @@ export class AuthService implements IAuthService {
 
   async getAllUsers(query: GetUsersQueryDto): Promise<UserDetailResponseDto[]>{
     const users= await this.userRepository.findAllWithDetails(query.role);
-
-    return users.map((user)=>{
-      const roleName=user.role?.name;
-      const userAny= user as any;
-      return {
-        id:user.id,
-        email:user.email,
-        fullName:user.fullName,
-        phone:user.phone ?? undefined,
-        role:roleName,
-        status:user.status,
-        createdAt:user.createdAt,
-        customerInfo:
-          roleName === 'CUSTOMER'&& userAny.customer
-            ?{
-              customerCode: userAny.customer.customerCode,
-            }
-            : undefined
-      };
-    });
+    return users.map((user)=>this.toUserDetail(user));
   }
 
   async getUserById(
@@ -323,43 +495,7 @@ export class AuthService implements IAuthService {
     if (!user) {
       throw new NotFoundException('Không tìm thấy người dùng.');
     }
-    const userAny = user as any;
-    const roleName = userAny.role?.name;
-    return {
-      id: userAny.id,
-      email: userAny.email,
-      fullName: userAny.fullName,
-      phone: userAny.phone ?? undefined,
-      role: roleName,
-      status: userAny.status,
-      createdAt: userAny.createdAt,
-
-      customerInfo:
-        roleName === 'CUSTOMER' && userAny.customer
-          ? {
-              customerCode: userAny.customer.customerCode,
-              loyaltyPoints: userAny.customer.loyaltyPoints ?? 0,
-            }
-          : undefined,
-      adminInfo:
-        roleName==='ADMIN'&& userAny.admin
-        ?{
-          employee_code: userAny.admin.employeeCode,
-          department: userAny.admin.department,
-          position: userAny.admin.position,
-        }
-        : undefined,
-
-      operatorInfo:
-        roleName==='WAREHOUSE_OPERATOR'&& userAny.warehouseOperator
-        ?{
-          employee_code: userAny.warehouseOperator.employeeCode,
-          warehouseId: userAny.warehouseOperator.warehouseId,
-          shift: userAny.warehouseOperator.shift,
-          status:userAny.warehouseOperator.status,
-        }
-        :undefined,
-    };
+    return this.toUserDetail(user);
   }
 
   async getUserByField(query: FindUserByFieldQueryDto): Promise<UserDetailResponseDto>{
@@ -371,42 +507,46 @@ export class AuthService implements IAuthService {
     if(!user){
       throw new NotFoundException('Không tìm thấy người dùng phù hợp');
     }
+    return this.toUserDetail(user);
+  }
 
-    const userAny= user as any;
-    const roleName=userAny.role?.name;
+  // Dùng chung cho get all / get by id / search: chỉ gắn block info của đúng
+  // role của user, các block còn lại để undefined (không xuất hiện trong JSON).
+  private toUserDetail(user: User): UserDetailResponseDto {
+    const roleName = user.role?.name;
     return {
-      id: userAny.id,
-      email: userAny.email,
-      fullName: userAny.fullName,
-      phone: userAny.phone ?? undefined,
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone ?? undefined,
       role: roleName,
-      status: userAny.status,
-      createdAt: userAny.createdAt,
+      status: user.status,
+      createdAt: user.createdAt,
 
       customerInfo:
-        roleName === 'CUSTOMER' && userAny.customer
+        roleName === RoleName.CUSTOMER && user.customer
           ? {
-              customerCode: userAny.customer.customerCode,
-              loyaltyPoints: userAny.customer.loyaltyPoints ?? 0,
+              customerCode: user.customer.customerCode,
+              loyaltyPoints: user.customer.loyaltyPoints ?? 0,
             }
           : undefined,
 
       adminInfo:
-        roleName === 'ADMIN' && userAny.admin
+        roleName === RoleName.ADMIN && user.admin
           ? {
-              employee_code: userAny.admin.employeeCode,
-              department: userAny.admin.department,
-              position: userAny.admin.position,
+              employee_code: user.admin.employeeCode,
+              department: user.admin.department,
+              position: user.admin.position,
             }
           : undefined,
 
       operatorInfo:
-        roleName === 'WAREHOUSE_OPERATOR' && userAny.warehouseOperator
+        roleName === RoleName.WAREHOUSE_OPERATOR && user.warehouseOperator
           ? {
-              employee_code: userAny.warehouseOperator.employeeCode,
-              warehouseId: userAny.warehouseOperator.warehouseId,
-              shift: userAny.warehouseOperator.shift,
-              status: userAny.warehouseOperator.status,
+              employee_code: user.warehouseOperator.employeeCode,
+              warehouseId: user.warehouseOperator.warehouseId,
+              shift: user.warehouseOperator.shift,
+              status: user.warehouseOperator.status,
             }
           : undefined,
     };

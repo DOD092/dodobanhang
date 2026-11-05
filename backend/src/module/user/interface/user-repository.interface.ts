@@ -4,7 +4,6 @@ import { User } from '../entities/user.entity';
 
 export interface IUserRepository {
   findById(id: string): Promise<User | null>;
-  findByIdWithAllRoles(targetUserId: string): unknown;
   create(dto: DeepPartial<User>): Promise<User>;
   findAll(pagination: PaginationQueryDto): Promise<User[]>;
   findOne(id: string): Promise<User>;
