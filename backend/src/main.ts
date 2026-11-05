@@ -4,6 +4,8 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { MAIL_SERVICE } from './common/dependency-injection/service.tokens';
+import { IMailService } from './module/mail/interface/mail-service.interface';
 import { TransformResponseInterceptor } from './common/interceptors/transform-response.interceptor';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
@@ -21,7 +23,7 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(app.get<IMailService>(MAIL_SERVICE)));
   app.useGlobalInterceptors(new TransformResponseInterceptor());
 
   const swaggerConfig = new DocumentBuilder()

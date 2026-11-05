@@ -5,10 +5,12 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { MAIL_SERVICE } from '../../common/dependency-injection/service.tokens';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, randomInt } from 'crypto';
 import {
@@ -28,7 +30,7 @@ import { LoginDto } from './dto/login.dto';
 import { IAuthService, LoginResult } from './interface/auth-service.interface';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
-import {MailService} from '../mail/mail.service';
+import { IMailService } from '../mail/interface/mail-service.interface';
 import { ForgotPasswordDto,ForgotPasswordResponseDto } from './dto/forgot-password.dto';
 import{ResetPasswordDto, ResetPasswordResponseDto} from './dto/reset-password.dto';
 import { ChangePasswordDto, ChangePasswordResponseDto } from './dto/change-password.dto';
@@ -48,6 +50,7 @@ export class AuthService implements IAuthService {
   // Tạo 1 lần dùng chung: client tự cache public key của Google để verify
   // chữ ký ID token, không phải gọi mạng lại mỗi request.
   private readonly googleClient: OAuth2Client;
+  private readonly logger = new Logger(AuthService.name);
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
@@ -56,7 +59,7 @@ export class AuthService implements IAuthService {
     @Inject(ROLE_REPOSITORY) private readonly roleRepository: IRoleRepository,
     private readonly jwtService: JwtService,
     private readonly authMapper: AuthMapper,
-    private readonly mailService: MailService,
+    @Inject(MAIL_SERVICE) private readonly mailService: IMailService,
     private readonly configService: ConfigService,
     // UnitOfWorkModule là @Global nên inject thẳng, không cần import module.
     private readonly unitOfWork: UnitOfWork,
@@ -314,6 +317,14 @@ export class AuthService implements IAuthService {
         customerCode: this.generateCustomerCode(),
       }),
     );
+
+    // Tài khoản đã tạo xong -> gửi mail lỗi thì KHÔNG ném 500: nếu ném, user
+    // đăng ký lại sẽ dính "Email đã tồn tại". Họ dùng API gửi lại mã để nhận mã mới.
+    try {
+      await this.mailService.sendVerificationEmail(user.email, verificationCode);
+    } catch (error) {
+      this.logger.error(`Gửi mã xác thực tới ${user.email} thất bại`, error instanceof Error ? error.stack : String(error));
+    }
 
     return this.authMapper.toRegisterResponse(user, customer);
   }
