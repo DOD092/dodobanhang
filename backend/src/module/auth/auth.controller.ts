@@ -228,7 +228,7 @@ export class AuthController {
   @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Admin tìm kiếm User theo 1 trường (email hoặc phone) kèm data theo role',
+    summary: 'Admin tìm kiếm User theo 1 trường (email, phone, customerCode hoặc employeeCode) kèm data theo role',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -236,7 +236,11 @@ export class AuthController {
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Chưa truyền email hoặc phone',
+    description: 'Không truyền trường nào hoặc truyền nhiều hơn 1 trường',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Có nhiều user khớp (phone trùng, hoặc employeeCode trùng giữa admin và nhân viên kho)',
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,

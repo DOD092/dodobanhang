@@ -1,9 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { BaseRepository } from '../../common/repository/base.repository';
 import { User } from './entities/user.entity';
-import { IUserRepository } from './interface/user-repository.interface';
+import {
+  IUserRepository,
+  UserSearchFilter,
+} from './interface/user-repository.interface';
 
 @Injectable()
 export class UserRepository extends BaseRepository<User> implements IUserRepository
@@ -45,17 +48,26 @@ export class UserRepository extends BaseRepository<User> implements IUserReposit
     });
   }
 
-  async findByFieldWithAllRoles(filter:{email?: string; phone?:string}):Promise<User | null>{
-    const whereCondition: any={};
-    if(filter.email) whereCondition.email=filter.email;
-    if(filter.phone) whereCondition.phone=filter.phone;
-    if(Object.keys(whereCondition).length===0){
-      return null;
-    }
+  // Lấy tối đa 2 dòng: đủ để service biết kết quả là 0, 1 hay "nhiều" (trùng
+  // phone, hoặc employeeCode trùng giữa admins và warehouse_operators).
+  async findByFieldWithAllRoles(filter: UserSearchFilter): Promise<User[]> {
+    let where: FindOptionsWhere<User> | FindOptionsWhere<User>[];
+    if (filter.email) where = { email: filter.email };
+    else if (filter.phone) where = { phone: filter.phone };
+    else if (filter.customerCode)
+      where = { customer: { customerCode: filter.customerCode } };
+    else if (filter.employeeCode)
+      // employee_code chỉ UNIQUE trong từng bảng, nên tìm ở cả 2 bảng staff.
+      where = [
+        { admin: { employeeCode: filter.employeeCode } },
+        { warehouseOperator: { employeeCode: filter.employeeCode } },
+      ];
+    else return [];
 
-    return this.repository.findOne({
-      where: whereCondition,
-      relations:['role','customer','admin','warehouseOperator'],
+    return this.repository.find({
+      where,
+      relations: ['role', 'customer', 'admin', 'warehouseOperator'],
+      take: 2,
     });
   }
 

@@ -499,15 +499,23 @@ export class AuthService implements IAuthService {
   }
 
   async getUserByField(query: FindUserByFieldQueryDto): Promise<UserDetailResponseDto>{
-    const {email, phone}=query;
-    if(!email && !phone){
+    const {email, phone, customerCode, employeeCode}=query;
+    const filledCount=[email, phone, customerCode, employeeCode].filter(Boolean).length;
+    if(filledCount===0){
       throw new BadRequestException('Vui lòng nhập 1 trường để tìm kiếm')
     }
-    const user = await this.userRepository.findByFieldWithAllRoles({ email, phone });
-    if(!user){
+    if(filledCount>1){
+      throw new BadRequestException('Chỉ được tìm kiếm theo 1 trường (email, phone, customerCode hoặc employeeCode)');
+    }
+    const users = await this.userRepository.findByFieldWithAllRoles({ email, phone, customerCode, employeeCode });
+    if(users.length===0){
       throw new NotFoundException('Không tìm thấy người dùng phù hợp');
     }
-    return this.toUserDetail(user);
+    // phone không UNIQUE dưới DB; employeeCode có thể trùng giữa admin và nhân viên kho.
+    if(users.length>1){
+      throw new ConflictException('Có nhiều người dùng khớp với giá trị này, vui lòng tìm bằng email hoặc mã khác.');
+    }
+    return this.toUserDetail(users[0]);
   }
 
   // Dùng chung cho get all / get by id / search: chỉ gắn block info của đúng
