@@ -263,9 +263,14 @@ export class AuthService implements IAuthService {
       user?.passwordHash &&
       (await bcrypt.compare(dto.password, user.passwordHash));
 
-    if (!isMatch) {
+    if (!user || !isMatch) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng.');
     }
+
+    if (user.status === UserStatus.INACTIVE && user.verificationCode) {
+      throw new ForbiddenException('Tài khoản chưa xác thực email.');
+    }
+    this.assertCanLogin(user);
 
     const payload: JwtPayload = {
       sub: user.id,

@@ -42,10 +42,11 @@ import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { AuthenticatedUser } from './interface/jwt-payload.interface';
 import { RoleName } from 'src/common/enum/role-name.enum';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import {RolesGuard,} from '../../common/guards/roles.guard';
+import { RolesGuard,} from '../../common/guards/roles.guard';
 import { CreateStaffAccountDto, CreateStaffAccountResponseDto } from './dto/create-staff-account.dto';
 import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
+import {ResendVerificationDto,ResendVerificationResponseDto} from './dto/resend-verification.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -144,7 +145,7 @@ export class AuthController {
     summary: 'Resend verification code to customer email',
   })
   resendVerificationCode(
-    @Body() dto: VerifyCustomerEmailDto,
+    @Body() dto: ResendVerificationDto,
   ): Promise<VerifyCustomerEmailResponseDto> {
     return this.authService.resendVerificationCode(dto);
   }
