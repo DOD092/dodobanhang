@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+
+/*
+  `container` không dùng mặc định của Tailwind (không tự canh giữa/padding) nên định nghĩa lại bằng
+  @utility - cách chính thức của Tailwind v4 để tùy biến utility có sẵn. Định nghĩa 1 chỗ này, dùng
+  `className="container"` ở khắp nơi như một cụm "canh giữa + giới hạn chiều rộng + đệm 2 bên".
+*/
+@utility container {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 80rem; /* 1280px, đủ rộng cho layout 2 cột của /products */
+  padding-inline: 1rem;
+}
+@media (min-width: 40rem) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+}
+
+/*
+  Màu thương hiệu: xanh lá #15803D (green-700) là màu chính, đi kèm trắng + đen (dùng neutral-900/950 có sẵn).
+  Dùng như: text-brand-primary, bg-brand-primary, hover:text-brand-primary-dark.
+*/
+@theme {
+  --color-brand-primary: #15803d;
+  --color-brand-primary-dark: #166534;
+  --color-brand-primary-light: #dcfce7;
+
+  /* Băng chuyền chạy ngang (components/common/Marquee.tsx): dải gồm 2 nửa giống nhau, trượt đúng
+     1 nửa rồi lặp. Thời lượng đặt riêng bằng style `animationDuration` theo số thẻ. */
+  --animate-marquee: marquee 40s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@layer base {
+  /* Tailwind preflight không đặt font gốc; site dùng font hệ thống làm nền cho next/font ở layout.tsx */
+  body {
+    color: #171717; /* neutral-900 */
+  }
+}
+
+@layer components {
+  /*
+    Nút dùng chung toàn site, thay cho `.btn`/`.btn-primary`/`.btn-outline-*` của Bootstrap trước đây.
+    Chỉ định nghĩa phần khung (padding, bo góc, chữ, transition); màu/biến thể tự thêm ở class dùng
+    (`btn-primary`, `btn-outline-primary`, `btn-outline-light`, `btn-light`), viết cùng file cho dễ tìm.
+    Dùng `@layer components` để `after:`, `hover:`... (utilities) vẫn ghi đè được khi cần.
+  */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 0.15s ease-in-out,
+      background-color 0.15s ease-in-out,
+      border-color 0.15s ease-in-out;
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+
+  .btn-primary {
+    background-color: var(--color-brand-primary);
+    border-color: var(--color-brand-primary);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-brand-primary-dark);
+    border-color: var(--color-brand-primary-dark);
+  }
+
+  .btn-outline-primary {
+    background-color: transparent;
+    border-color: var(--color-brand-primary);
+    color: var(--color-brand-primary);
+  }
+  .btn-outline-primary:hover:not(:disabled) {
+    background-color: var(--color-brand-primary);
+    color: #fff;
+  }
+
+  .btn-outline-secondary {
+    background-color: transparent;
+    border-color: #d4d4d4; /* neutral-300 */
+    color: #171717; /* neutral-900 */
+  }
+  .btn-outline-secondary:hover:not(:disabled) {
+    background-color: #f5f5f5; /* neutral-100 */
+  }
+
+  .btn-outline-light {
+    background-color: transparent;
+    border-color: rgb(255 255 255 / 50%);
+    color: #fff;
+  }
+  .btn-outline-light:hover:not(:disabled) {
+    background-color: #fff;
+    color: var(--color-brand-primary);
+  }
+
+  .btn-light {
+    background-color: #fff;
+    border-color: #fff;
+    color: var(--color-brand-primary);
+  }
+  .btn-light:hover:not(:disabled) {
+    background-color: #f5f5f5; /* neutral-100 */
+  }
+
+  /*
+    Input/select dùng chung, thay cho `.form-control`/`.form-select` của Bootstrap.
+    Padding-inline lệch (form-control có input dạng ô tìm kiếm với icon + nút bên trong, cần
+    padding-left/right riêng) nên chỉ định nghĩa phần khung, padding đặt ở nơi dùng.
+  */
+  .form-input {
+    display: block;
+    width: 100%;
+    border: 1px solid #d4d4d4; /* neutral-300 */
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #fff;
+    color: #171717;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 0 0 4px rgb(21 128 61 / 25%);
+  }
+  .form-input.is-invalid {
+    border-color: #dc2626; /* red-600 */
+  }
+  .form-input.is-invalid:focus {
+    box-shadow: 0 0 0 4px rgb(220 38 38 / 25%);
+  }
+}

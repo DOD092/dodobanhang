@@ -4,7 +4,10 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { Category } from './entities/category.entity';
-import { ICategoryRepository } from './interface/category-repository.interface';
+import {
+  CategoryWithCount,
+  ICategoryRepository,
+} from './interface/category-repository.interface';
 import { ICategoryService } from './interface/category-service.interface';
 
 @Injectable()
@@ -32,5 +35,9 @@ export class CategoryService implements ICategoryService {
 
   remove(id: string): Promise<void> {
     return this.categoryRepository.remove(id);
+  }
+
+  findPublicWithProductCount(): Promise<CategoryWithCount[]> {
+    return this.categoryRepository.findPublicWithProductCount();
   }
 }

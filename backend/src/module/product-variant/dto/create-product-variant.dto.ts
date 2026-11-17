@@ -44,10 +44,14 @@ export class CreateProductVariantDto {
   @MaxLength(50)
   storage?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    nullable: true,
+    description: 'Bỏ trống hoặc null = chưa niêm yết giá ("Liên hệ")',
+  })
+  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  price: number;
+  price?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()

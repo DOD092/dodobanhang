@@ -2,11 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import {
+  ContactMessage,
   ErrorAlertContext,
   IMailService,
 } from './interface/mail-service.interface';
 import {
   MailTemplate,
+  contactTemplate,
   errorAlertTemplate,
   passwordResetTemplate,
   verificationTemplate,
@@ -27,6 +29,7 @@ export class MailService implements IMailService {
   private readonly transporter: nodemailer.Transporter | null;
   private readonly from: string;
   private readonly alertEmail?: string;
+  private readonly contactEmail?: string;
   private readonly lastAlertAt = new Map<string, number>();
 
   constructor(private readonly configService: ConfigService) {
@@ -46,6 +49,7 @@ export class MailService implements IMailService {
     this.from =
       this.configService.get<string>('MAIL_FROM') ?? `Dodobanhang <${user}>`;
     this.alertEmail = this.configService.get<string>('ALERT_EMAIL');
+    this.contactEmail = this.configService.get<string>('CONTACT_EMAIL');
 
     if (!this.transporter) {
       this.logger.warn(
@@ -86,11 +90,36 @@ export class MailService implements IMailService {
     }
   }
 
-  private async send(to: string, { subject, html }: MailTemplate): Promise<void> {
+  // Khác sendErrorAlert: lỗi gửi mail được ném ra để client nhận 5xx, khách biết
+  // tin nhắn CHƯA tới (gọi điện thay vì tưởng đã gửi xong).
+  async sendContactMessage(message: ContactMessage): Promise<void> {
+    if (!this.contactEmail) {
+      // Chưa cấu hình hộp thư nhận: vẫn log đủ nội dung để không mất tin nhắn khi dev
+      this.logger.warn(
+        `Chưa cấu hình CONTACT_EMAIL -> tin nhắn liên hệ chỉ được log: ${JSON.stringify(message)}`,
+      );
+      return;
+    }
+    await this.send(this.contactEmail, contactTemplate(message), {
+      replyTo: message.email,
+    });
+  }
+
+  private async send(
+    to: string,
+    { subject, html }: MailTemplate,
+    options: { replyTo?: string } = {},
+  ): Promise<void> {
     if (!this.transporter) {
       this.logger.log(`[MAIL-DEV] to=${to} | subject=${subject}\n${html}`);
       return;
     }
-    await this.transporter.sendMail({ from: this.from, to, subject, html });
+    await this.transporter.sendMail({
+      from: this.from,
+      to,
+      subject,
+      html,
+      replyTo: options.replyTo,
+    });
   }
 }

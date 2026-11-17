@@ -2,6 +2,7 @@ import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { Category } from '../entities/category.entity';
+import { CategoryWithCount } from './category-repository.interface';
 
 export interface ICategoryService {
   create(dto: CreateCategoryDto): Promise<Category>;
@@ -9,4 +10,5 @@ export interface ICategoryService {
   findOne(id: string): Promise<Category>;
   update(id: string, dto: UpdateCategoryDto): Promise<Category>;
   remove(id: string): Promise<void>;
+  findPublicWithProductCount(): Promise<CategoryWithCount[]>;
 }

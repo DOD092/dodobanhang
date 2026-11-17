@@ -39,6 +39,16 @@ export class CategoryController {
     return this.categoryService.findAll(pagination);
   }
 
+  // Khai báo TRƯỚC `:id`, nếu không 'public' bị ParseUUIDPipe chặn (400)
+  @Get('public')
+  @ApiOperation({
+    summary: 'Web bán hàng: category ACTIVE kèm productCount',
+    description: 'Không phân trang (số nhóm ít). Sắp theo thời gian tạo.',
+  })
+  findPublic() {
+    return this.categoryService.findPublicWithProductCount();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a Category by id' })
   @ApiParam({ name: 'id', format: 'uuid' })

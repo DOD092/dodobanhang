@@ -1,0 +1,26 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# TypeScript
+*.tsbuildinfo
+
+# env (giữ .env.example nếu có)
+.env*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# misc
+.DS_Store
+/coverage
+.vercel

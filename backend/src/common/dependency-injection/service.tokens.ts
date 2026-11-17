@@ -25,6 +25,8 @@ export const PRODUCT_SERVICE = Symbol('PRODUCT_SERVICE');
 export const PRODUCT_IMAGE_SERVICE = Symbol('PRODUCT_IMAGE_SERVICE');
 export const PRODUCT_VARIANT_SERVICE = Symbol('PRODUCT_VARIANT_SERVICE');
 export const REVIEW_SERVICE = Symbol('REVIEW_SERVICE');
+// Ngoài 25 bảng ERD: form liên hệ trên web, không có bảng (chỉ gửi email)
+export const CONTACT_SERVICE = Symbol('CONTACT_SERVICE');
 export const ROLE_SERVICE = Symbol('ROLE_SERVICE');
 export const SHIPMENT_SERVICE = Symbol('SHIPMENT_SERVICE');
 export const SHIPMENT_ITEM_SERVICE = Symbol('SHIPMENT_ITEM_SERVICE');

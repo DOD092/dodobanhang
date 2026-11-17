@@ -8,6 +8,8 @@ import { AppService } from './app.service';
 import { UnitOfWorkModule } from './common/unit-of-work/unit-of-work.module';
 import { getDatabaseConfig } from './config/database.config';
 import { HealthController } from './health.controller';
+import { CatalogSeedModule } from './database/catalog-seed/catalog-seed.module';
+import { ContactModule } from './module/contact/contact.module';
 import { AddressModule } from './module/address/address.module';
 import { AdminModule } from './module/admin/admin.module';
 import { AuthModule } from './module/auth/auth.module';
@@ -82,6 +84,9 @@ import { WarehouseOperatorModule } from './module/warehouse-operator/warehouse-o
     VoucherModule,
     OrderVoucherModule,
     ReviewModule,
+    // Ngoài ERD: form liên hệ (chỉ gửi email) + seed dữ liệu web bán hàng (SEED_CATALOG=true)
+    ContactModule,
+    CatalogSeedModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

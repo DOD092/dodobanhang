@@ -37,14 +37,16 @@ export class ProductVariant {
   @Column({ type: 'varchar', length: 50, name: 'storage', nullable: true })
   storage?: string;
 
+  // null = chưa niêm yết giá, frontend hiện "Liên hệ" (khác ERD: ERD để NOT NULL).
   @Column({
     type: 'numeric',
     precision: 18,
     scale: 2,
     name: 'price',
+    nullable: true,
     transformer: numericTransformer,
   })
-  price: number;
+  price: number | null;
 
   @Column({
     type: 'numeric',

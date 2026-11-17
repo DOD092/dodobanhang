@@ -1,4 +1,4 @@
-# CLAUDE.md — dodobanhang backend
+# backend.md — dodobanhang backend
 
 Tài liệu thống nhất giữa Dat và Claude về cấu trúc database & code convention của backend.
 Đọc file này trước khi thêm bảng / module mới.
@@ -309,6 +309,7 @@ cũ không có nó. Bản `erd.jpg` mới có đủ cả 3 bảng profile.)*
 | `admins.position` | ERD nháp ghi `postition` | `position` | Sửa lỗi chính tả (comment đã ghi trong entity) |
 | `shipments.carrier` giá trị `J&T` | `J&T` | `JT` | Ký tự `&` không hợp lệ cho tên thành viên enum trong TS |
 | `inventories` PK | `invetory_id` | `id` | Sửa lỗi chính tả + dùng `id` thống nhất |
+| `product_variants.price` | NOT NULL | **nullable** | `null` = chưa niêm yết giá, web hiện "Liên hệ" (toàn bộ 13 sản phẩm thật hiện chưa có giá). Thêm 17/11/2026 khi ghép frontend - xem mục 7 |
 
 Ràng buộc `CHECK` trong ERD (`quantity > 0`, `rating 1-5`) **đã tạo dưới DB** bằng
 `@Check()` — xem mục 3.2. DTO vẫn validate `@Min`/`@Max` để client nhận 400 sớm.
@@ -428,6 +429,9 @@ tình huống này không lặp lại vì lý do cũ nữa.
 
 ## 6. Việc còn lại (chưa làm)
 
+- [ ] **Merge thay đổi `product_variants.price` nullable lên `dev` sớm** (xem mục 7.4) — nhánh nào
+      còn `price` NOT NULL mà boot vào DB đã có giá `null` sẽ không lên được (đúng kịch bản 5.1).
+
 - [ ] **Chuyển từ `synchronize` sang migration** — ưu tiên cao nhất vì DB đã lên cloud.
 - [ ] Đặt `DB_SSL_CA` (ca.pem của Aiven) để xác thực đầy đủ chứng chỉ server.
 - [ ] **Index cho cột FK** — Postgres *không* tự tạo index khi thêm FOREIGN KEY.
@@ -443,3 +447,66 @@ tình huống này không lặp lại vì lý do cũ nữa.
 - [ ] Nghiệp vụ thật: đặt hàng, trừ tồn kho, áp voucher, webhook thanh toán.
   Các service hiện tại mới chỉ là CRUD thuần.
 - [ ] Unit/e2e test cho từng module.
+
+---
+
+## 7. API cho web bán hàng (ghép với `frontend/`, 17/11/2026)
+
+Frontend (Next.js, chạy cổng **3001**) đọc dữ liệu qua các endpoint dưới đây. Tài liệu frontend ở
+`../frontend/frontend.md`, tổng quan ở `../CLAUDE.md`. Backend giữ cổng **3000** (không đổi, vì
+`GOOGLE_CALLBACK_URL` đã đăng ký với Google Cloud Console).
+
+### 7.1. Endpoint công khai
+
+| Endpoint | Trả về | Ghi chú |
+| --- | --- | --- |
+| `GET /api/products/search` | `{ items, total, page, pageSize, totalPages }` | Query: `q`, `category` (slug), `minPrice`, `maxPrice` (`>= min`, `< max`), `sort` (`newest` / `price-asc` / `price-desc` / `name-asc`), `page`, `limit` (≤ 100). `page` vượt quá thì trả trang cuối |
+| `GET /api/products/slug/:slug` | `ProductDetailDto` (thêm `variants`) | 404 nếu không có hoặc đang ẩn |
+| `GET /api/categories/public` | `Category & { productCount }[]` | Không phân trang, sắp theo `created_at` |
+| `POST /api/contacts` | 202 `{ sent: true }` | Gửi email tới `CONTACT_EMAIL`, Reply-To = email khách. **Không lưu DB.** Tối đa 5 lần / 10 phút / IP → 429 |
+
+- Mỗi item sản phẩm (`ProductSummaryDto` trong `product/dto/product-catalog.dto.ts`) đã gộp sẵn:
+  `category { id, name, slug }`, `sku` (biến thể đầu tiên), `price` (**giá thấp nhất** trong các
+  biến thể, `null` = "Liên hệ"), `images` (ảnh `is_primary` trước rồi theo `sort_order`).
+- **Chỉ hiện bản ghi `status = 'ACTIVE'`** (cả product lẫn category), hằng `PUBLIC_STATUS` trong
+  `product/product.constants.ts`. ERD không quy định giá trị status nên đây là quy ước mới:
+  muốn ẩn sản phẩm khỏi web thì đặt status khác `ACTIVE`.
+- Route `search`, `slug/:slug`, `public` **khai báo trước `:id`** trong controller, nếu không sẽ
+  bị `ParseUUIDPipe` của `:id` bắt và trả 400.
+- CRUD cũ (`GET /api/products`, `/api/categories`...) giữ nguyên, không đổi response.
+- Module `contact` không có entity/repository (chỉ gửi mail) nên chỉ có token `CONTACT_SERVICE`,
+  không có `CONTACT_REPOSITORY`. Giới hạn 5 lần/10 phút đếm trong bộ nhớ process: restart là reset,
+  chạy nhiều instance thì mỗi instance đếm riêng — khi scale chuyển sang `@nestjs/throttler` + Redis.
+
+### 7.2. Tìm kiếm không dấu — không cần extension
+
+`common/utils/vietnamese-search.util.ts`: `unaccentSql()` dùng hàm `translate()` có sẵn của
+Postgres để bỏ dấu tiếng Việt (không cần `CREATE EXTENSION unaccent` trên DB dùng chung). Từ khoá
+nhiều từ thì phải khớp đủ (AND), tìm trong tên + mô tả + mọi SKU; ký tự `%` `_` được escape.
+`sort=name-asc` cũng sắp theo tên bỏ dấu vì collation của Postgres xếp `Đ` sau `Z`.
+
+### 7.3. Seed dữ liệu thật — `SEED_CATALOG=true`
+
+`src/database/catalog-seed/`: 5 nhóm + 1 brand mặc định ("Chưa phân loại", vì `brand_id` NOT NULL)
++ 13 sản phẩm (mỗi sản phẩm 1 biến thể, `price: null`) + ảnh. Dữ liệu chuyển nguyên văn từ dữ liệu
+hardcode cũ của frontend (`catalog.seed-data.ts`).
+
+- **Chỉ chạy khi `SEED_CATALOG=true`**: không tự ghi vào DB dùng chung mỗi lần ai đó boot app.
+- Idempotent, 1 transaction: product đã có (theo `slug`) hoặc SKU đã có thì bỏ qua, không ghi đè.
+- `created_at` cố định từ `2026-01-01` + 1 giây/phần tử để thứ tự "Mới nhất" giống frontend cũ.
+- Ảnh là đường dẫn tĩnh của frontend (`/images/products/...` trong `frontend/public`). Ảnh upload
+  sau này nằm ở `/uploads/...`; frontend tự ghép origin backend cho loại này.
+- Icon nhóm trên frontend gán theo **slug** category (`CategoryCard.tsx`): đổi slug thì báo frontend.
+
+### 7.4. ⚠️ `product_variants.price` đã thành nullable
+
+Theo mục 5.1: nhánh nào còn entity `price` NOT NULL mà boot vào DB đã có dòng `price = null` thì
+`synchronize` sẽ `SET NOT NULL` → Postgres từ chối → app không boot. **Báo cả nhóm và merge thay đổi
+này lên `dev` trước khi chạy `SEED_CATALOG=true` trên Aiven.**
+
+### 7.5. Đã kiểm thử (Postgres 16 tạm trong Docker, không chạm Aiven)
+
+Boot + seed (5 category, 13 product), chạy seed lần 2 không tạo trùng; tìm không dấu `den led`,
+`ĐÈN`, theo SKU, `%`; lọc category/khoảng giá; 4 kiểu sắp xếp (giá null luôn cuối); page vượt quá;
+slug 404; `sort`/`limit` sai → 400; contact: chuẩn hoá SĐT, escape HTML, field lạ → 400, lần thứ 6 →
+429; CORS preflight từ `localhost:3001`.

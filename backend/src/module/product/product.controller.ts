@@ -12,10 +12,17 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PRODUCT_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { CreateProductDto } from './dto/create-product.dto';
+import { ProductDetailDto, ProductPageDto } from './dto/product-catalog.dto';
+import { SearchProductQueryDto } from './dto/search-product-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { IProductService } from './interface/product-service.interface';
 
@@ -36,6 +43,26 @@ export class ProductController {
   @ApiOperation({ summary: 'List products (paginated)' })
   findAll(@Query() pagination: PaginationQueryDto) {
     return this.productService.findAll(pagination);
+  }
+
+  // 2 route dưới phải khai báo TRƯỚC `:id`, nếu không 'search'/'slug' bị bắt
+  // vào `:id` và ParseUUIDPipe trả 400.
+  @Get('search')
+  @ApiOperation({
+    summary: 'Web bán hàng: tìm + lọc + sắp xếp + phân trang',
+    description:
+      'Chỉ sản phẩm và category có status ACTIVE. Kèm category, SKU, giá thấp nhất, ảnh.',
+  })
+  @ApiOkResponse({ type: ProductPageDto })
+  search(@Query() query: SearchProductQueryDto) {
+    return this.productService.search(query);
+  }
+
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Web bán hàng: chi tiết sản phẩm theo slug' })
+  @ApiOkResponse({ type: ProductDetailDto })
+  findBySlug(@Param('slug') slug: string) {
+    return this.productService.findPublicBySlug(slug);
   }
 
   @Get(':id')
