@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# TqpProject - frontend
+# dodobanhang - frontend
 
 Tài liệu cho code web (Next.js) trong folder này. Tổng quan repo (frontend + backend) ở `../CLAUDE.md`; tài liệu backend ở `../backend/backend.md`.
 Mọi lệnh npm chạy trong folder `frontend/`.
@@ -45,7 +45,7 @@ Công ty **bán** sắt thép, kim loại, vật liệu xây dựng (không bán
 | React Hook Form | 7 | Form Liên hệ, kèm `@hookform/resolvers` 5 |
 | Zod | 4 | Schema validate (`z.email()`, `.pipe()`; cú pháp v4) |
 
-Chưa dùng: Redux/RTK Query, auth, ESLint. Dữ liệu sản phẩm/nhóm/form liên hệ lấy từ **backend NestJS** (`../backend/`) qua `fetch`, xem mục "Nối backend".
+Chưa dùng: Redux/RTK Query, ESLint. Đăng ký / đăng nhập đã nối backend (xem mục "Đăng ký / đăng nhập"). Dữ liệu sản phẩm/nhóm/form liên hệ lấy từ **backend NestJS** (`../backend/`) qua `fetch`, xem mục "Nối backend".
 
 **Đã bỏ Bootstrap** (chuyển hẳn sang Tailwind thuần để dễ bảo trì lâu dài, tránh việc phải nhớ 2 bộ quy tắc CSS cùng lúc và xung đột `!important`). Gỡ `bootstrap`, `@popperjs/core`, `@types/bootstrap` khỏi `package.json`; xóa `BootstrapClient.tsx`, `OffcanvasAutoClose.tsx`, `postcss-remove-charset.cjs`. Menu mobile, ô tìm kiếm, bộ lọc sản phẩm (trước dùng Bootstrap collapse/offcanvas, cần JS của Bootstrap) nay dùng `useState` + Tailwind thuần, đúng theo mục "Ưu tiên sử dụng" bên dưới.
 
@@ -98,7 +98,8 @@ frontend/
    ├─ types/                     interface TypeScript, mỗi entity một file
    ├─ features/                  dữ liệu + hàm truy cập theo từng domain
    ├─ components/                UI tái sử dụng
-   │  ├─ layouts/header/         Header, Logo, NavLinks, HeaderSearch
+   │  ├─ layouts/header/         Header, Logo, NavLinks (HeaderSearch.tsx còn file nhưng không dùng, 18/11/2026)
+   │  ├─ auth/                   RegisterForm, VerifyEmailForm, LoginForm
    │  ├─ layouts/footer/         Footer
    │  ├─ home/                   HeroBanner, Highlights (+ HighlightsList), CoreValues, CustomerReviews, coreValueIcons.ts
    │  ├─ about/                  CoreValuePanels (giá trị cốt lõi dạng panel mở rộng ở /about), VisionMissionTabs (Tầm nhìn / Sứ mệnh dạng tab)
@@ -139,13 +140,17 @@ Folder trống được giữ bằng file `.gitkeep`; xóa file này khi thêm n
 | `app/services/[slug]/` | `/services/ho-tro-thi-cong-lap-dat-thiet-bi-2` | Xong: `PageHeader` (breadcrumb, tiêu đề = `name`, mô tả, nút "Tư vấn ngay") → thân bài `ServiceBody` (khối `content`; `content` rỗng thì tạm dựng từ `details`, cả hai rỗng thì hiện dòng "đang cập nhật") → "Dịch vụ khác" (`ServiceCard` trỏ tới trang chi tiết, ẩn khi không còn dịch vụ khác) → `ContactCta`. `generateStaticParams` build sẵn từng dịch vụ (●) theo URL chuẩn `<slug>-<id>`; không có id hợp lệ, id không tồn tại hoặc dịch vụ `is_active = false` thì `notFound()` (404 thật, có `not-found.tsx` riêng); id đúng nhưng slug sai/cũ hoặc chỉ có id thì chuyển hướng 308 về URL chuẩn (xem mục "URL trang chi tiết") |
 | `app/products/(list)/` | `/products` | Xong: tìm kiếm, lọc nhóm + khoảng giá, sắp xếp, phân trang (xem "Trang Sản phẩm"). `(list)` là route group, không có trong URL |
 | `app/products/[slug]/` | `/products/vong-bi-nsk-684zz`... | Xong: chi tiết sản phẩm + sản phẩm cùng nhóm, `not-found.tsx` riêng. URL là **slug lưu trong DB** (không kèm id), render theo request (ƒ), không có `generateStaticParams`. Slug sai/cũ → 404 (không còn chuyển hướng 308 như kiểu `<slug>-<id>`) |
+| `app/register/` | `/register` | Đăng ký (`RegisterForm`), xong thì chuyển `/verify-email?email=...` |
+| `app/verify-email/` | `/verify-email?email=...` | Nhập mã 6 số + gửi lại mã (`VerifyEmailForm`). Server Component đọc `email` từ `searchParams`, thiếu thì `redirect('/register')` |
+| `app/login/` | `/login` | Đăng nhập (`LoginForm`), xong chuyển `/account` |
+| `app/account/` | `/account` | Client Component: thông tin tài khoản + Đăng xuất. Chưa đăng nhập thì `router.replace('/login')` |
 | `app/contact/` | `/contact` | Xong: `ContactInfo` (SĐT, email, địa chỉ có link Google Maps, giờ làm việc; nền ảnh `hero-banner.png` + lớp phủ tối, chữ trắng, cùng kiểu `ImageBanner`) -> 2 cột: lời cảm ơn bên trái, `ContactForm` bên phải. Có `metadata.title` riêng |
 
 - Thêm trang: tạo `app/<tên>/page.tsx`, không cần đăng ký ở đâu khác. Menu lấy từ `navItems` trong `config/site.ts`, nên thêm mục menu ở đó.
 - Trang chi tiết: `app/products/[slug]/page.tsx` (thư mục `[slug]` nhưng giá trị là `<slug>-<id>`, xem mục "URL trang chi tiết").
 - **`loading.tsx` bọc mọi route con cùng cấp.** Khi đó trang stream sớm, và `notFound()` ở route con chỉ trả được mã 200 (soft 404). Vì vậy `loading.tsx` của `/products` nằm trong route group `(list)` để không bọc `[id]`. Làm các trang chi tiết khác cũng theo cách này.
 - 404: `app/not-found.tsx`. Loading: `app/loading.tsx`.
-- `app/layout.tsx` là root layout (`lang="vi"`): `Header` + `<main className="flex-1">{children}</main>` + `Footer` + `BackToTop`. **Trang con không tự bọc `<main>`**; dùng `<div className="container py-5">` (hoặc `<section>`).
+- `app/layout.tsx` là root layout (`lang="vi"`): mọi thứ bọc trong **`<AuthProvider>`** (bắt buộc, vì `Header` gọi `useAuth()`) gồm `Header` + `<main className="flex-1">{children}</main>` + `Footer` + `BackToTop`. **Trang con không tự bọc `<main>`**; dùng `<div className="container py-5">` (hoặc `<section>`).
 - **`BackToTop`** (client, `components/common/`): nút tròn góc dưới phải (`fixed right-4 bottom-4 z-30`, `z-30` thấp hơn lớp phủ/khung của `FiltersDrawer` để không nổi đè lên khi mở bộ lọc mobile), hiện sau khi `window.scrollY > 400`, bấm cuộn mượt về đầu (`scrollTo({behavior:'smooth'})`). Có ở mọi trang vì gắn ở root layout, không phải thêm riêng từng trang dài.
 - Tên folder/file dùng **tiếng Anh**; chữ hiển thị trên giao diện là tiếng Việt.
 
@@ -183,14 +188,15 @@ Lưu ý:
 
 ## Layout đã dựng (theo mock Canva)
 
-- **Header**: **1 hàng**, nền trắng, `sticky top-0 z-50` (dính trên cùng khi cuộn, chỉ CSS). `Header.tsx` là **Client Component** (`useState` cho `menuOpen`/`searchOpen`, tự đóng cả 2 khi `usePathname()` đổi), thứ tự DOM `Logo | cụm nút | menu`, không dùng thư viện nào cho việc thu gọn (trước dùng Bootstrap collapse):
-  - Desktop (>= lg, 1024px): cụm nút có `lg:order-3` nên hiển thị `Logo | Menu | 🔍 [📞 SĐT]` (menu luôn hiện, bỏ qua `menuOpen`: lớp `lg:flex` thắng `hidden` ở breakpoint đó). Số điện thoại chỉ hiện chữ từ `xl` (1280px); 1024-1279px nút gọi chỉ có icon cho đủ chỗ.
-  - Mobile/tablet (< lg): logo + 🔍 + 📞 + hamburger (`MenuIcon`/`XIcon` đổi theo `menuOpen`) cùng 1 hàng; menu (`w-full`) thả xuống dòng dưới do `flex-wrap`, mỗi mục một dòng có kẻ ngăn cách. **Trượt xuống có hiệu ứng** (không phải bật/tắt `hidden`/`flex` cứng): `#main-nav` là `grid` với `grid-rows-[0fr]` (đóng) ↔ `grid-rows-[1fr]` (mở, theo `menuOpen`) + `transition-all duration-300`, cùng kỹ thuật với chi tiết dịch vụ (`ServicePanel`, vì `height: auto` không animate được). Desktop (>= lg) ép `lg:grid-rows-[1fr]` cố định (giãn hết, bỏ qua `menuOpen`); div con bên trong đổi thành `lg:flex lg:justify-center` để canh giữa hàng ngang.
+- **Header**: **1 hàng**, nền trắng, `sticky top-0 z-50` (dính trên cùng khi cuộn, chỉ CSS). `Header.tsx` là **Client Component** (`useState` cho `menuOpen`, tự đóng khi `usePathname()` đổi; `useAuth()` lấy `user`/`loading`), thứ tự DOM `Logo | cụm nút | menu`, không dùng thư viện nào cho việc thu gọn (trước dùng Bootstrap collapse):
+  - Desktop (>= lg, 1024px): cụm nút có `lg:order-3` nên hiển thị `Logo | Menu | Tài khoản` (menu luôn hiện, bỏ qua `menuOpen`).
+  - **18/11/2026: bỏ nút tìm kiếm (🔍 + `HeaderSearch`) và nút gọi điện (📞 SĐT) khỏi header** theo yêu cầu; thêm link **"Tài khoản"** (chữ cố định): chưa đăng nhập → `/login`, đã đăng nhập → `/account`. Chỉ hiện khi `loading` của `AuthProvider` đã xong để link không đổi đích giữa chừng. Tìm sản phẩm giờ chỉ ở ô tìm kiếm trang `/products`; SĐT vẫn ở footer và `/contact`.
+  - Mobile/tablet (< lg): logo + "Tài khoản" + hamburger (`MenuIcon`/`XIcon` đổi theo `menuOpen`) cùng 1 hàng; menu (`w-full`) thả xuống dòng dưới do `flex-wrap`, mỗi mục một dòng có kẻ ngăn cách. **Trượt xuống có hiệu ứng** (không phải bật/tắt `hidden`/`flex` cứng): `#main-nav` là `grid` với `grid-rows-[0fr]` (đóng) ↔ `grid-rows-[1fr]` (mở, theo `menuOpen`) + `transition-all duration-300`, cùng kỹ thuật với chi tiết dịch vụ (`ServicePanel`, vì `height: auto` không animate được). Desktop (>= lg) ép `lg:grid-rows-[1fr]` cố định (giãn hết, bỏ qua `menuOpen`); div con bên trong đổi thành `lg:flex lg:justify-center` để canh giữa hàng ngang.
     - **`overflow-hidden` phải đặt ở CON (grid item, div bọc `NavLinks`), không phải khung ngoài (grid container).** Item trong grid mặc định có `min-height: auto`, khiến hàng không co về `0fr` được nếu chính item đó không có `overflow` khác `visible` - đặt nhầm ở container thì khung vẫn cao đủ nội dung (chỉ `opacity-0` làm trong suốt), để lại khoảng trắng chèn giữa header và nội dung bên dưới lúc đóng menu (lỗi thật đã gặp, xem cùng lỗi tương tự đã tránh đúng ở `ServicePanel`).
   - `Logo` (đổi thương hiệu **dodobanhang**, theme xanh, 17/11/2026): biểu tượng SVG vuông nền xanh chữ "D" trắng `public/images/logo.svg` (tự vẽ tạm, có nền riêng nên dùng được trên cả nền trắng lẫn nền đen) qua `next/image` `width={40} height={40}`, `loading="eager"` + `siteConfig.shortName` (chữ thường, không `uppercase`). Chữ ẩn khi màn hình < 440px để header không vỡ 2 hàng.
     - `logo.png` / `logo-red.png` (logo cũ "TQP" đỏ) còn trong `public/images/` nhưng không còn dùng; xóa khi chắc không cần. Nếu có logo dodobanhang chính thức (SVG) thì thay `logo.svg`.
     - Chưa có favicon (`app/icon.*`); `logo.svg` vuông nên có thể dùng làm `app/icon.svg`.
-  - Nút gọi là `<a href="tel:">` dạng `btn btn-primary rounded-full` (đỏ, xem mục "Styling" cho `.btn`). Nút kính lúp mở `HeaderSearch` (nhận `open`/`onClose` từ `Header`, không còn tự quản lý qua id/Bootstrap collapse; tự focus ô nhập khi `open` đổi thành true): gửi `next/form` tới `/products?q=...`.
+  - (Cũ, đã bỏ 18/11/2026) Nút gọi là `<a href="tel:">` dạng `btn btn-primary rounded-full`. Nút kính lúp mở `HeaderSearch` (nhận `open`/`onClose` từ `Header`, không còn tự quản lý qua id/Bootstrap collapse; tự focus ô nhập khi `open` đổi thành true): gửi `next/form` tới `/products?q=...`.
   - Email, giờ làm việc, địa chỉ **không ở header** (có ở footer và trang `/contact`).
   - Menu: mục đang chọn chữ `brand-primary` đậm + gạch chân đỏ (chỉ ở >= lg); chữ `whitespace-nowrap`.
 - **Footer**: nền đen `neutral-950`, viền trên đỏ `border-t-4 border-brand-primary`, 3 cột Tailwind grid (`grid-cols-12` + `col-span-5/3/4`, tương đương tỉ lệ 5/3/4 của Bootstrap trước đây):
@@ -261,7 +267,7 @@ Lưu ý:
 | Backend | NestJS ở `../backend/`, cổng **3000**, prefix `/api`. Tài liệu: `../backend/backend.md` mục 7 |
 | Frontend | cổng **3001** (`npm run dev`) |
 | Cấu hình | `.env.local` (copy `.env.example`): `NEXT_PUBLIC_API_URL=http://localhost:3000/api`. Nhúng lúc build, đổi thì chạy lại dev/build |
-| Đã nối | sản phẩm, nhóm sản phẩm, form liên hệ |
+| Đã nối | sản phẩm, nhóm sản phẩm, form liên hệ, đăng ký / xác thực email / đăng nhập (18/11/2026) |
 | Vẫn hardcode | dịch vụ (`serviceData.ts`), đánh giá trang chủ (`reviewData.ts`; bảng `reviews` của backend gắn với đơn hàng nên không dùng được), `domainData.ts`, `config/home.ts` |
 
 - **Response backend luôn bọc** `{ data, isSuccess, message, statusCode, timestamp }`; `apiRequest()` trong `apis/client.ts` bóc `data`, lỗi thì ném `ApiError(status, message)`.
@@ -270,6 +276,31 @@ Lưu ý:
 - **Ảnh**: `/images/...` là ảnh tĩnh của frontend; `/uploads/...` là ảnh backend lưu → `resolveImageUrl()` ghép origin backend. `next.config.ts` khai báo `remotePatterns` theo `NEXT_PUBLIC_API_URL` và bật `dangerouslyAllowLocalIP` **chỉ khi dev** (Next 16 mặc định chặn tối ưu ảnh từ IP nội bộ).
 - Backend chỉ trả sản phẩm/nhóm có `status = 'ACTIVE'`. Muốn ẩn sản phẩm khỏi web thì đổi status trong DB.
 - Đã kiểm tra (17/11/2026) với backend + Postgres tạm: trang chủ, `/products` (lọc nhóm, khoảng giá, tìm không dấu, sắp xếp, trang vượt quá, slug nhóm lạ), chi tiết sản phẩm (gallery 3 ảnh, giá/"Liên hệ", cùng nhóm), slug sai → 404, `/services/*` vẫn chạy, `next/image` tối ưu ảnh, CORS form liên hệ từ `:3001`.
+
+## Đăng ký / đăng nhập (18/11/2026)
+
+Nối với `POST /api/auth/register`, `/verify-email`, `/resend-verification-code`, `/login` và `GET /api/auth/me` của backend (`../backend/backend.md` mục 7.6).
+
+```
+Trang (app/register, verify-email, login, account)
+  └─ Form (components/auth/*)          zod validate, bắt ApiError, router.push
+       └─ AuthProvider (features/auth)  giữ user + token cho toàn site: login(), logout()
+            └─ authAPI.ts                mỗi hàm = 1 endpoint
+                 └─ apis/client.ts        fetch, bóc { data }, lỗi -> ApiError(status, message)
+```
+
+| Bước | Luồng |
+|---|---|
+| Đăng ký | `RegisterForm` → `register()` (bỏ `confirmPassword`, `phone` rỗng thì không gửi, vì backend chặn field lạ → 400) → `/verify-email?email=...`. Email trùng → 409 "Email đã tồn tại" |
+| Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sau 1 giây sang `/login`. Mã sống 5 phút; nút "Gửi lại mã" gọi `resendVerificationCode(email)` |
+| Đăng nhập | `LoginForm` gọi `useAuth().login()` (không gọi `authAPI` trực tiếp): `login()` → lưu `accessToken` vào `localStorage` → `getMe(token)` → `setUser` → `/account`. 401 sai email/mật khẩu; 403 "chưa xác thực" → chuyển `/verify-email` |
+| Mở lại / F5 | `AuthProvider` đọc token trong `localStorage`, gọi `getMe`; lỗi (hết hạn 1 ngày, sai) thì `logout()`. Trong lúc chờ `loading = true` (Header ẩn link "Tài khoản", `/account` hiện "Đang tải...") |
+| Đăng xuất | `logout()`: xoá token + `setUser(null)` |
+
+- API cần đăng nhập: gửi header `Authorization: Bearer <token>` (xem `getMe`).
+- **Token ở `localStorage`** là cách đơn giản để demo; JS bất kỳ trên trang đọc được (rủi ro XSS). Lên production nên để backend đặt cookie `httpOnly`.
+- `/account` chặn ở client (redirect sau khi `loading` xong), không phải lớp bảo vệ thật: dữ liệu được bảo vệ ở backend bằng JWT.
+- Thử: đăng ký → lấy mã trong email (hoặc cột `users.verification_code` trên DB) → xác thực → đăng nhập → Header "Tài khoản" trỏ `/account`.
 
 ## Dữ liệu
 
@@ -289,6 +320,7 @@ Tên field giữ đúng snake_case theo schema:
 | `ContentBlock` (`types/ContentBlock.ts`) | Union các khối nội dung: `heading` (`level` 2 hoặc 3, `text`), `paragraph` (`text`), `list` (`style` unordered/ordered, `items`), `image` (`src`, `alt`, `width`, `height`, `caption?`). Chỉ lưu ý nghĩa, không lưu style; h1 là `name` của dịch vụ nên không có trong khối. Thêm loại khối thì thêm vào union và xử lý trong component hiển thị |
 | `Domain` | `id: number`, `name`, `description`. Trước dùng làm nhóm sản phẩm, nay **không còn trang nào dùng** (đã chuyển sang `Category`); dữ liệu vẫn là 6 nhóm cũ. Dự kiến là "lĩnh vực cần tư vấn" cho `Contact.domain_id` |
 | `Contact` | `name`, `email`, `phone`, `address?`, `domain_id?: number`, `content` (không có `id`). `address`, `domain_id` đang **optional** vì form theo mock chỉ có tên, SĐT, email, nội dung |
+| `RegisterPayload`, `LoginPayload`, `CurrentUser` (`types/Auth.ts`) | Khớp DTO backend, camelCase. `CurrentUser` = response `GET /api/auth/me`: `id`, `email`, `fullName`, `phone?`, `role` (`CUSTOMER` / `WAREHOUSE_OPERATOR` / `ADMIN`), `status`, `customerInfo?` (`customerCode`, `loyaltyPoints`) |
 | `Review` | `id: number`, `content`, `images: string[]` (ảnh thực tế kèm đánh giá, `[]` nếu không có), `customer_name?`, `rating?: number` (1-5), `created_at?` (ISO 8601). Tự thêm, không có trong schema gốc. 3 field cuối **optional**: đánh giá thật chủ dự án gửi chỉ có nội dung + ảnh, không tự điền tên, sao hay ngày; `CustomerReviews` tự ẩn phần thiếu |
 
 ### Feature (`src/features/`)
@@ -301,6 +333,7 @@ Tên field giữ đúng snake_case theo schema:
 | `domain/` | `domainData.ts`, `domainAPI.ts` | `getDomains()` |
 | `contact/` | `contactAPI.ts`, `contactSchema.ts` | `createContact(payload)` → `POST /api/contacts` (gọi từ trình duyệt; backend gửi email tới `CONTACT_EMAIL`, không lưu DB; 429 khi gửi quá 5 lần/10 phút, `ContactForm` hiện đúng thông báo của backend). `contactSchema` (Zod, khớp DTO backend): tên 2-100 ký tự, SĐT VN `0`/`+84` + 9 số (bỏ khoảng trắng, dấu chấm, gạch), email hợp lệ (≤ 150), nội dung 10-2000 ký tự |
 | `review/` | `reviewData.ts`, `reviewAPI.ts` | `getReviews()` |
+| `auth/` | `authAPI.ts`, `authSchema.ts`, `AuthProvider.tsx` | `register`, `verifyEmail`, `resendVerificationCode`, `login`, `getMe(token)`; `registerSchema` / `loginSchema` (Zod); `AuthProvider` + `useAuth()`. Xem mục "Đăng ký / đăng nhập" |
 
 Dữ liệu thật:
 - **2 dịch vụ** (`serviceData.ts`, theo giấy phép - xem mục "Lĩnh vực kinh doanh"): id 1 "Tư vấn thiết bị công nghiệp" (icon `OrderIcon`), id 2 "Hỗ trợ thi công – lắp đặt thiết bị" (icon `WrenchIcon`). `content` (thân bài đầy đủ) chuyển nguyên văn từ s1.pdf/s2.pdf thành khối heading/paragraph/list/image; tiêu đề chính là `name`, đoạn kêu gọi cuối bài bỏ vì đã có `ContactCta`. **Chữ in đậm giữa câu của PDF không giữ** (khối `paragraph` chỉ có `text` thuần). `details` (gạch đầu dòng khi rê chuột ở /services) tóm tắt lại từ chính nội dung PDF. Ảnh (đã nén JPG) ở `public/images/services/`: `kho-hang`, `van-chuyen-noi-thanh` (nguồn Trung Quân Phát), `tho-dien-lap-dat`, `khao-sat-thi-cong` (chú thích "Nguồn: Internet", **cần kiểm tra bản quyền** trước khi dùng thật). Không thêm cam kết bảo hành, thời gian hay giá khi chưa có thông tin thật.
@@ -390,7 +423,7 @@ Dữ liệu còn là mẫu: `coreValues` trong `config/home.ts`.
 2. Sản phẩm: giao diện + dữ liệu thật đã xong, **đã nối backend** (17/11/2026). Có thể thêm sau: giá thật cho sản phẩm nào niêm yết được (bộ lọc/sắp xếp theo giá tự hiện lại, xem `hasPricedProducts()`), ô nhập giá tự do.
 3. Trang `/services`: đã xong. Có thể thêm: truyền dịch vụ sang form (`/contact?service=<id>` điền sẵn nội dung), ảnh thật cho từng dịch vụ.
 4. Trang `/about`: đã xong (ảnh đầu trang là ảnh vận chuyển thật; bản rộng hơn sẽ nét hơn).
-5. Tìm kiếm: đã có (Header và `/products`, lọc trên server). Có thể mở rộng tìm cả dịch vụ.
+5. Tìm kiếm: chỉ còn ở `/products` (lọc trên server); ô tìm kiếm ở Header đã bỏ 18/11/2026. Có thể mở rộng tìm cả dịch vụ.
 6. `/contact`: giao diện + validate + **gửi qua backend** đã xong (cần đặt `CONTACT_EMAIL` + `MAIL_USER`/`MAIL_PASSWORD` ở `backend/.env` thì mail mới gửi thật). Có thể thêm dropdown "Sản phẩm quan tâm".
 7. Hero: đã dùng ảnh bìa thật `home-banner.png` (tràn bề ngang). Ảnh chỉ rộng 1360px, xin chủ dự án bản rộng >= 2720px để nét ở màn hình lớn.
 8. **Chờ chủ dự án quyết định** (đã hỏi, chưa trả lời):
@@ -401,4 +434,4 @@ Dữ liệu còn là mẫu: `coreValues` trong `config/home.ts`.
 
 ## Chưa làm / để sau
 
-Auth (backend đã có API đăng nhập/đăng ký/Google, frontend chưa có trang), Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).
+Auth còn thiếu: quên / đổi mật khẩu, đăng nhập Google trên web, chuyển token sang cookie `httpOnly`. Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).

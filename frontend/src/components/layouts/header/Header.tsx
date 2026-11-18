@@ -1,12 +1,12 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { MenuIcon, PhoneIcon, SearchIcon, XIcon } from '@/components/common/Icons'
-import { siteConfig } from '@/config/site'
+import { MenuIcon, XIcon } from '@/components/common/Icons'
+import { useAuth } from '@/features/auth/AuthProvider'
 
-import HeaderSearch from './HeaderSearch'
 import Logo from './Logo'
 import NavLinks from './NavLinks'
 
@@ -21,13 +21,12 @@ import NavLinks from './NavLinks'
 */
 export default function Header() {
   const pathname = usePathname()
+  const { user, loading } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
 
-  // Đổi trang thì đóng cả 2 panel
+  // Đổi trang thì đóng menu mobile
   useEffect(() => {
     setMenuOpen(false)
-    setSearchOpen(false)
   }, [pathname])
 
   return (
@@ -37,35 +36,22 @@ export default function Header() {
           <Logo />
 
           <div className="ms-auto flex items-center gap-1 sm:gap-2 lg:order-3">
-            <button
-              type="button"
-              aria-label={searchOpen ? 'Đóng tìm kiếm' : 'Tìm kiếm sản phẩm'}
-              aria-expanded={searchOpen}
-              onClick={() => {
-                setSearchOpen((open) => !open)
-                setMenuOpen(false)
-              }}
-              className="p-1.5 text-neutral-900 transition-colors hover:text-brand-primary sm:p-2"
-            >
-              <SearchIcon className="size-6" />
-            </button>
-            <a
-              href={`tel:${siteConfig.phone}`}
-              aria-label={`Gọi ${siteConfig.phone}`}
-              className="btn btn-primary rounded-full px-3 py-2 xl:px-4"
-            >
-              <PhoneIcon className="size-5" />
-              <span className="hidden xl:inline">{siteConfig.phone}</span>
-            </a>
+            {/* Chưa đăng nhập -> /login, đã đăng nhập -> /account. Chờ AuthProvider kiểm tra token
+                xong mới hiện để link không đổi đích giữa chừng. */}
+            {!loading && (
+              <Link
+                href={user ? '/account' : '/login'}
+                className="px-2 text-sm font-semibold whitespace-nowrap text-neutral-900 hover:text-brand-primary"
+              >
+                Tài khoản
+              </Link>
+            )}
             <button
               type="button"
               aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
               aria-expanded={menuOpen}
               aria-controls="main-nav"
-              onClick={() => {
-                setMenuOpen((open) => !open)
-                setSearchOpen(false)
-              }}
+              onClick={() => setMenuOpen((open) => !open)}
               className="rounded-lg border border-neutral-300 p-1.5 text-neutral-900 sm:ms-1 sm:p-2 lg:hidden"
             >
               {menuOpen ? <XIcon className="size-5" /> : <MenuIcon className="size-5" />}
@@ -92,7 +78,6 @@ export default function Header() {
           </div>
         </div>
       </nav>
-      <HeaderSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   )
 }

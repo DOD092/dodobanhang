@@ -441,7 +441,8 @@ tình huống này không lặp lại vì lý do cũ nữa.
 - [ ] **Tách DB riêng cho từng dev** (Aiven cho tạo thêm database trên cùng service,
       mỗi người đổi `DB_DATABASE` trong `.env`) — cách rẻ nhất để hết hẳn cảnh
       `synchronize` của người này phá schema người kia. Xem mục 5.1.
-- [ ] Auth (JWT) + guard theo role (`RoleName`) — hiện **mọi endpoint đều public**,
+- [ ] Auth (JWT) + guard theo role (`RoleName`) — **cập nhật 18/11/2026: module `auth` đã có JWT +
+      `JwtAuthGuard`/`RolesGuard` (xem 7.6), cần rà lại các module CRUD khác** — trước đây mọi endpoint đều public,
       kể cả `POST /api/users` (ai cũng tạo được tài khoản ADMIN).
 - [ ] `password_hash` hiện nhận chuỗi thô từ DTO — phải hash (bcrypt/argon2) trong service.
 - [ ] Nghiệp vụ thật: đặt hàng, trừ tồn kho, áp voucher, webhook thanh toán.
@@ -510,3 +511,25 @@ Boot + seed (5 category, 13 product), chạy seed lần 2 không tạo trùng; t
 `ĐÈN`, theo SKU, `%`; lọc category/khoảng giá; 4 kiểu sắp xếp (giá null luôn cuối); page vượt quá;
 slug 404; `sort`/`limit` sai → 400; contact: chuẩn hoá SĐT, escape HTML, field lạ → 400, lần thứ 6 →
 429; CORS preflight từ `localhost:3001`.
+
+### 7.6. Đăng ký / đăng nhập cho web (18/11/2026)
+
+Frontend dùng: `POST /api/auth/register` → `POST /api/auth/verify-email` (mã 6 số, hạn 5 phút;
+`POST /api/auth/resend-verification-code` gửi lại) → `POST /api/auth/login` → `{ accessToken }`
+(JWT, `JWT_EXPIRES_IN`, mặc định 1d) → `GET /api/auth/me` với `Authorization: Bearer <token>`.
+Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhập".
+
+Đã sửa trong `auth` khi nối:
+
+- **`AuthService.login`** trước đây không xét trạng thái tài khoản: user chưa xác thực email hoặc bị
+  khoá vẫn lấy được token. Nay thứ tự là: không có user / sai mật khẩu → **401** (cùng một câu, không
+  lộ email nào tồn tại) → đúng mật khẩu nhưng `INACTIVE` + còn `verificationCode` → **403 "Tài khoản
+  chưa xác thực email."** (frontend dựa vào chữ "xác thực" để chuyển sang trang nhập mã) →
+  `assertCanLogin()` (BLOCKED / DELETED / INACTIVE do admin khoá → 403).
+  ⚠️ Kiểm tra mật khẩu phải đứng trước kiểm tra trạng thái, và `throw 401` phải nằm trong
+  `if (!user || !isMatch)`. Đã từng đặt nhầm phần kiểm tra trạng thái vào trong khối này và bỏ
+  `throw` → sai mật khẩu vẫn nhận token.
+- **`resend-verification-code`** nhận nhầm `VerifyCustomerEmailDto` (bắt buộc `verificationCode`) nên
+  gửi `{ email }` bị 400. Đã đổi sang `ResendVerificationDto`.
+- Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
+  `users.verification_code` để test.

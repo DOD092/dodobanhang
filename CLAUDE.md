@@ -30,11 +30,13 @@ cd frontend && npm run dev         # http://localhost:3001
 | Cấu hình frontend | `frontend/.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:3000/api` |
 | URL sản phẩm | `/products/<slug>` (slug trong DB), lọc nhóm `?category=<slug>` |
 | Giá "Liên hệ" | `product_variants.price` nullable, `null` = "Liên hệ" |
-| Đã nối | sản phẩm, nhóm sản phẩm (`/api/products/search`, `/api/products/slug/:slug`, `/api/categories/public`), form liên hệ (`POST /api/contacts`, gửi email, không lưu DB) |
+| Đã nối | sản phẩm, nhóm sản phẩm (`/api/products/search`, `/api/products/slug/:slug`, `/api/categories/public`), form liên hệ (`POST /api/contacts`, gửi email, không lưu DB), đăng ký / xác thực email / đăng nhập (`/api/auth/*`, 18/11/2026) |
+| Đăng nhập trên web | JWT lưu `localStorage`, `AuthProvider` bọc toàn site (`frontend/src/features/auth/`); trang `/register`, `/verify-email`, `/login`, `/account` |
+| Thương hiệu | **dodobanhang**, màu chính xanh `#15803D` (17/11/2026); header chỉ còn Menu + "Tài khoản" (bỏ tìm kiếm, SĐT 18/11/2026) |
 | Vẫn hardcode ở frontend | dịch vụ, đánh giá trang chủ |
 | Dữ liệu ban đầu | `SEED_CATALOG=true` trong `backend/.env` → nạp 5 nhóm + 13 sản phẩm thật (1 lần) |
 
-Chi tiết: `backend/backend.md` mục 7, `frontend/frontend.md` mục "Nối backend".
+Chi tiết: `backend/backend.md` mục 7 (auth: 7.6), `frontend/frontend.md` mục "Nối backend" và "Đăng ký / đăng nhập".
 
 ⚠️ **Trước khi bật `SEED_CATALOG=true` trên Aiven**, phải báo cả nhóm và merge thay đổi
 `price` nullable lên `dev`. Nếu không, nhánh nào còn `price` NOT NULL sẽ không boot được
