@@ -32,7 +32,7 @@ cd frontend && npm run dev         # http://localhost:3001
 | Giá "Liên hệ" | `product_variants.price` nullable, `null` = "Liên hệ" |
 | Đã nối | sản phẩm, nhóm sản phẩm (`/api/products/search`, `/api/products/slug/:slug`, `/api/categories/public`), form liên hệ (`POST /api/contacts`, gửi email, không lưu DB), đăng ký / xác thực email / đăng nhập (`/api/auth/*`, 18/11/2026) |
 | Đăng nhập trên web | JWT lưu `localStorage`, `AuthProvider` bọc toàn site (`frontend/src/features/auth/`); trang `/register`, `/verify-email`, `/login`, `/account` |
-| Thương hiệu | **dodobanhang**, màu chính xanh `#15803D` (17/11/2026); header chỉ còn Menu + "Tài khoản" (bỏ tìm kiếm, SĐT 18/11/2026) |
+| Thương hiệu | **dodobanhang** (con dodo). Màu theo bộ nhận diện (19/11/2026): xanh cổ vịt `#0F3D3E` (chính), vàng `#FFD66B` (nhấn), cam `#FF6B4A`, kem `#FFF8EC`. Header: logo + Menu + nút vàng "Tài khoản" (bỏ tìm kiếm, SĐT). Ảnh hero/banner bản "Mua sắm cùng dodo. Đặt hàng ngay." (nút → `/products`). Chi tiết: `frontend/frontend.md` mục "Styling" và "Layout đã dựng" |
 | Vẫn hardcode ở frontend | dịch vụ, đánh giá trang chủ |
 | Dữ liệu ban đầu | `SEED_CATALOG=true` trong `backend/.env` → nạp 5 nhóm + 13 sản phẩm thật (1 lần) |
 
