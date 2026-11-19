@@ -99,7 +99,7 @@ frontend/
    ├─ features/                  dữ liệu + hàm truy cập theo từng domain
    ├─ components/                UI tái sử dụng
    │  ├─ layouts/header/         Header, Logo, NavLinks (HeaderSearch.tsx còn file nhưng không dùng, 18/11/2026)
-   │  ├─ auth/                   RegisterForm, VerifyEmailForm, LoginForm, GoogleLoginButton, AuthDivider
+   │  ├─ auth/                   RegisterForm, VerifyEmailForm, ResendVerificationForm, LoginForm, GoogleLoginButton, AuthDivider
    │  ├─ layouts/footer/         Footer
    │  ├─ home/                   HeroBanner, Highlights (+ HighlightsList), CoreValues, CustomerReviews, coreValueIcons.ts
    │  ├─ about/                  CoreValuePanels (giá trị cốt lõi dạng panel mở rộng ở /about), VisionMissionTabs (Tầm nhìn / Sứ mệnh dạng tab)
@@ -293,7 +293,8 @@ Trang (app/register, verify-email, login, account)
 | Bước | Luồng |
 |---|---|
 | Đăng ký | `RegisterForm` → `register()` (bỏ `confirmPassword`, `phone` rỗng thì không gửi, vì backend chặn field lạ → 400) → `/verify-email?email=...`. Email trùng → 409 "Email đã tồn tại" |
-| Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sang `/login?verified=1&email=...` (điền sẵn email, focus ô mật khẩu, hiện "Xác thực email thành công"). Đếm ngược mã 5:00; "Gửi lại mã" (`resendVerificationCode`) khoá 60 giây sau mỗi lần gửi (chỉ chặn ở client). Ô mã `autoComplete="one-time-code"`. Vào từ `/login` khi tài khoản chưa xác thực thì URL có `&from=login`: không đếm ngược, cho gửi lại ngay. Báo "đã được xác thực" thì hiện link đăng nhập |
+| Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sang `/login?verified=1&email=...` (điền sẵn email, focus ô mật khẩu, hiện "Xác thực email thành công"). Đếm ngược mã 5:00; "Gửi lại mã" (`resendVerificationCode`) khoá 60 giây sau mỗi lần gửi (chỉ chặn ở client). Ô mã `autoComplete="one-time-code"`. Vào từ `/login` khi tài khoản chưa xác thực thì URL có `&from=login`: không đếm ngược, cho gửi lại ngay. Báo "đã được xác thực" thì hiện link đăng nhập. Backend trả 429 (gửi lại < 60 giây) thì lấy N giây trong câu báo để khoá nút |
+| Gửi lại mã khi không còn trang nhập mã | `/verify-email` **không có `?email`** → `ResendVerificationForm` (nhập email → `resendVerificationCode` → `/verify-email?email=...&sent=1`; bị 429 thì mã trước còn hạn → sang thẳng trang nhập mã). Lối vào: link "Chưa nhận được email xác thực? Gửi lại mã" ở `/login`. Trước đây thiếu email thì `redirect('/register')` |
 | Đăng nhập | `LoginForm` gọi `useAuth().login()` (không gọi `authAPI` trực tiếp): `login()` → lưu `accessToken` vào `localStorage` → `getMe(token)` → `setUser` → `/account`. 401 sai email/mật khẩu; 403 "chưa xác thực" → chuyển `/verify-email` |
 | Mở lại / F5 | `AuthProvider` đọc token trong `localStorage`, gọi `getMe`; lỗi (hết hạn 1 ngày, sai) thì `logout()`. Trong lúc chờ `loading = true` (Header ẩn link "Tài khoản", `/account` hiện "Đang tải...") |
 | Đăng xuất | `logout()`: xoá token + `setUser(null)` |

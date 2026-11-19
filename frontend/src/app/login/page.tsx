@@ -20,6 +20,12 @@ export default async function LoginPage({
       <AuthDivider />
       <GoogleLoginButton mode="signin" />
       <p className="mt-4 text-sm">
+        Chưa nhận được email xác thực?{' '}
+        <Link href="/verify-email" className="text-brand-primary">
+          Gửi lại mã
+        </Link>
+      </p>
+      <p className="mt-2 text-sm">
         Chưa có tài khoản?{' '}
         <Link href="/register" className="text-brand-primary">
           Đăng ký

@@ -537,6 +537,11 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
   `ACTIVE` = **tự mở khoá**. Nay: đã `ACTIVE` → 400 "Tài khoản đã được xác thực.", bị khoá → 403.
   Đã test đủ luồng trên DB Postgres tạm (đăng ký, login chưa xác thực 403, sai mã, mã cũ sau khi gửi lại,
   mã hết hạn, xác thực, login, admin khoá rồi thử tự mở). Còn thiếu: giới hạn số lần nhập sai mã
-  (6 số, hiện có thể dò trong 5 phút) và giới hạn tần suất gửi lại mã ở backend.
+  (6 số, hiện có thể dò trong 5 phút).
+- **Gửi lại mã tối thiểu cách nhau 60 giây** (`RESEND_COOLDOWN_MS`, 20/11/2026) → **429** "Vui lòng đợi N
+  giây trước khi gửi lại mã." Lần gửi gần nhất suy từ `verificationExpireAt - VERIFICATION_TTL_MS` (5 phút),
+  **không thêm cột** (DB dùng chung + `synchronize`). Áp dụng cả lần gửi đầu lúc đăng ký. Gửi mail lỗi →
+  trả lại `verificationExpireAt` cũ (không khoá oan) + **500** "Gửi email thất bại..." (trước đây lỗi mail
+  văng 500 thô). Frontend đọc N trong câu 429 để khoá nút đúng N giây.
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.

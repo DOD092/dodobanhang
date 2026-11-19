@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -46,6 +48,11 @@ import { GetUsersQueryDto, UserDetailResponseDto } from './dto/get-users.dto';
 import { FORBIDDEN_MESSAGE } from '@nestjs/core/guards';
 import { FindUserByFieldQueryDto } from './dto/find-user-by-field.dto';
 import { Not } from 'typeorm';
+// Mã xác thực email: sống 5 phút; gửi lại tối thiểu cách nhau 60 giây (frontend VerifyEmailForm
+// dùng cùng 2 con số này để đếm ngược).
+const VERIFICATION_TTL_MS = 5 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60 * 1000;
+
 @Injectable()
 export class AuthService implements IAuthService {
   // Tạo 1 lần dùng chung: client tự cache public key của Google để verify
@@ -312,7 +319,7 @@ export class AuthService implements IAuthService {
         roleId: customerRole.id,
         status: UserStatus.INACTIVE,
         verificationCode: verificationCode,
-        verificationExpireAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
+        verificationExpireAt: new Date(Date.now() + VERIFICATION_TTL_MS),
       }),
     );
 
@@ -385,15 +392,41 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Email không tồn tại.');
     }
     this.assertPendingVerification(user);
+
+    // Chống spam mail: mỗi mã sống VERIFICATION_TTL_MS, nên lần gửi gần nhất = expireAt - TTL.
+    // Không cần thêm cột (DB dùng chung + synchronize, xem backend.md 5.1).
+    const previousExpireAt = user.verificationExpireAt;
+    if (previousExpireAt) {
+      const sentAt = previousExpireAt.getTime() - VERIFICATION_TTL_MS;
+      const waitMs = sentAt + RESEND_COOLDOWN_MS - Date.now();
+      if (waitMs > 0) {
+        throw new HttpException(
+          `Vui lòng đợi ${Math.ceil(waitMs / 1000)} giây trước khi gửi lại mã.`,
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    }
+
     const newVerificationCode = randomInt(100000, 1000000).toString();
-    const verificationExpireAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const verificationExpireAt = new Date(Date.now() + VERIFICATION_TTL_MS);
 
     await this.userRepository.update(user.id, {
       verificationCode: newVerificationCode,
       verificationExpireAt: verificationExpireAt,
     });
 
-    await this.mailService.sendVerificationEmail(user.email, newVerificationCode);
+    try {
+      await this.mailService.sendVerificationEmail(user.email, newVerificationCode);
+    } catch (error) {
+      // Trả lại hạn cũ để người dùng không bị khoá 60 giây vì lỗi không phải của họ.
+      // (Mã mới vẫn giữ: mã cũ đã lộ hay chưa cũng không quan trọng bằng việc mail không tới.)
+      await this.userRepository.update(user.id, { verificationExpireAt: previousExpireAt });
+      this.logger.error(
+        `Gửi lại mã xác thực tới ${user.email} thất bại`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new InternalServerErrorException('Gửi email thất bại, vui lòng thử lại sau.');
+    }
     return { message: 'Mã xác thực mới đã được gửi đến email của bạn.' };
   } 
 

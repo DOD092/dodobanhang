@@ -13,6 +13,8 @@ import { resendVerificationCode, verifyEmail } from '@/features/auth/authAPI'
   - "Gửi lại mã" (POST /api/auth/resend-verification-code) khoá RESEND_COOLDOWN giây sau mỗi lần gửi.
   - Xác thực xong -> /login?verified=1&email=... (điền sẵn email, hiện thông báo thành công).
   `fromLogin`: vào đây từ trang đăng nhập (tài khoản chưa xác thực) -> mã cũ có thể đã hết hạn.
+  `justSent`: vừa gửi mã mới từ ResendVerificationForm -> hiện thông báo đã gửi.
+  Backend cũng chặn gửi lại < 60 giây (429 "Vui lòng đợi N giây...") -> đồng bộ lại bộ đếm theo N.
 */
 const CODE_TTL = 5 * 60
 const RESEND_COOLDOWN = 60
@@ -28,9 +30,11 @@ function formatTime(seconds: number) {
 export default function VerifyEmailForm({
   email,
   fromLogin = false,
+  justSent = false,
 }: {
   email: string
   fromLogin?: boolean
+  justSent?: boolean
 }) {
   const router = useRouter()
   const [code, setCode] = useState('')
@@ -40,7 +44,9 @@ export default function VerifyEmailForm({
           ok: false,
           text: 'Tài khoản chưa xác thực email. Nhập mã trong email, hoặc bấm "Gửi lại mã" nếu mã đã hết hạn.',
         }
-      : null
+      : justSent
+        ? { ok: true, text: 'Đã gửi mã xác thực mới tới email của bạn.' }
+        : null
   )
   const [busy, setBusy] = useState(false)
   const [verified, setVerified] = useState(false)
@@ -65,6 +71,9 @@ export default function VerifyEmailForm({
     const text = e instanceof ApiError ? e.message : 'Không kết nối được máy chủ'
     // Đã xác thực từ trước (vd mở lại link cũ) -> chỉ cần đăng nhập
     if (e instanceof ApiError && text.includes('đã được xác thực')) setAlreadyVerified(true)
+    // 429 từ backend: còn phải đợi N giây -> khoá nút đúng N giây
+    const wait = e instanceof ApiError && e.status === 429 ? text.match(/(\d+)\s*giây/) : null
+    if (wait) setCooldown(Number(wait[1]))
     setMsg({ ok: false, text })
   }
 
