@@ -1,5 +1,5 @@
 import { apiPost, apiRequest, buildApiUrl } from '@/apis/client'
-import type { CurrentUser, LoginPayload, RegisterPayload } from '@/types/Auth'
+import type { CurrentUser, GoogleAuthResult, LoginPayload, RegisterPayload } from '@/types/Auth'
 
 export function register(payload: RegisterPayload) {
   return apiPost<{ userId: string; email: string }>('/auth/register', payload)
@@ -15,6 +15,12 @@ export function resendVerificationCode(email: string) {
 
 export function login(payload: LoginPayload) {
   return apiPost<{ accessToken: string }>('/auth/login', payload)
+}
+
+// `credential` = ID token Google Identity Services trả về (response.credential). Backend tự verify
+// chữ ký + audience (GOOGLE_CLIENT_ID); chưa có tài khoản thì tạo customer mới (không cần mã email).
+export function loginWithGoogle(credential: string) {
+  return apiPost<GoogleAuthResult>('/auth/google', { credential })
 }
 
 export function getMe(token: string) {

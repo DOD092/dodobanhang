@@ -99,7 +99,7 @@ frontend/
    ├─ features/                  dữ liệu + hàm truy cập theo từng domain
    ├─ components/                UI tái sử dụng
    │  ├─ layouts/header/         Header, Logo, NavLinks (HeaderSearch.tsx còn file nhưng không dùng, 18/11/2026)
-   │  ├─ auth/                   RegisterForm, VerifyEmailForm, LoginForm
+   │  ├─ auth/                   RegisterForm, VerifyEmailForm, LoginForm, GoogleLoginButton, AuthDivider
    │  ├─ layouts/footer/         Footer
    │  ├─ home/                   HeroBanner, Highlights (+ HighlightsList), CoreValues, CustomerReviews, coreValueIcons.ts
    │  ├─ about/                  CoreValuePanels (giá trị cốt lõi dạng panel mở rộng ở /about), VisionMissionTabs (Tầm nhìn / Sứ mệnh dạng tab)
@@ -297,7 +297,9 @@ Trang (app/register, verify-email, login, account)
 | Đăng nhập | `LoginForm` gọi `useAuth().login()` (không gọi `authAPI` trực tiếp): `login()` → lưu `accessToken` vào `localStorage` → `getMe(token)` → `setUser` → `/account`. 401 sai email/mật khẩu; 403 "chưa xác thực" → chuyển `/verify-email` |
 | Mở lại / F5 | `AuthProvider` đọc token trong `localStorage`, gọi `getMe`; lỗi (hết hạn 1 ngày, sai) thì `logout()`. Trong lúc chờ `loading = true` (Header ẩn link "Tài khoản", `/account` hiện "Đang tải...") |
 | Đăng xuất | `logout()`: xoá token + `setUser(null)` |
+| Google (19/11/2026) | `GoogleLoginButton` (ở `/login` và `/register`, dưới gạch "hoặc" `AuthDivider`) nạp `https://accounts.google.com/gsi/client` bằng `next/script`, vẽ nút chính thức của Google (popup). Chọn tài khoản → Google trả `credential` (ID token) → `useAuth().loginWithGoogle(credential)` → `POST /api/auth/google` → `{ accessToken, isNewUser, user }` → lưu token + `getMe` (chung hàm `applyToken` với đăng nhập thường) → `/account`. Chưa có tài khoản thì backend tự tạo customer, **không cần mã xác thực email**; email đã có thì gắn Google vào tài khoản đó |
 
+- **Cấu hình Google**: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` trong `.env.local` phải **giống `GOOGLE_CLIENT_ID` của backend** (backend kiểm tra audience). Google Cloud Console → Credentials → OAuth client đó → **Authorized JavaScript origins** phải có `http://localhost:3001` (và domain thật khi deploy), thiếu thì popup báo `origin_mismatch`. Client ID là thông tin công khai, không phải secret. Thiếu biến thì nút tự ẩn (cảnh báo ở console khi dev).
 - API cần đăng nhập: gửi header `Authorization: Bearer <token>` (xem `getMe`).
 - **Token ở `localStorage`** là cách đơn giản để demo; JS bất kỳ trên trang đọc được (rủi ro XSS). Lên production nên để backend đặt cookie `httpOnly`.
 - `/account` chặn ở client (redirect sau khi `loading` xong), không phải lớp bảo vệ thật: dữ liệu được bảo vệ ở backend bằng JWT.
@@ -334,7 +336,7 @@ Tên field giữ đúng snake_case theo schema:
 | `domain/` | `domainData.ts`, `domainAPI.ts` | `getDomains()` |
 | `contact/` | `contactAPI.ts`, `contactSchema.ts` | `createContact(payload)` → `POST /api/contacts` (gọi từ trình duyệt; backend gửi email tới `CONTACT_EMAIL`, không lưu DB; 429 khi gửi quá 5 lần/10 phút, `ContactForm` hiện đúng thông báo của backend). `contactSchema` (Zod, khớp DTO backend): tên 2-100 ký tự, SĐT VN `0`/`+84` + 9 số (bỏ khoảng trắng, dấu chấm, gạch), email hợp lệ (≤ 150), nội dung 10-2000 ký tự |
 | `review/` | `reviewData.ts`, `reviewAPI.ts` | `getReviews()` |
-| `auth/` | `authAPI.ts`, `authSchema.ts`, `AuthProvider.tsx` | `register`, `verifyEmail`, `resendVerificationCode`, `login`, `getMe(token)`; `registerSchema` / `loginSchema` (Zod); `AuthProvider` + `useAuth()`. Xem mục "Đăng ký / đăng nhập" |
+| `auth/` | `authAPI.ts`, `authSchema.ts`, `AuthProvider.tsx` | `register`, `verifyEmail`, `resendVerificationCode`, `login`, `loginWithGoogle(credential)`, `getMe(token)`; `registerSchema` / `loginSchema` (Zod); `AuthProvider` + `useAuth()`. Xem mục "Đăng ký / đăng nhập" |
 
 Dữ liệu thật:
 - **2 dịch vụ** (`serviceData.ts`, theo giấy phép - xem mục "Lĩnh vực kinh doanh"): id 1 "Tư vấn thiết bị công nghiệp" (icon `OrderIcon`), id 2 "Hỗ trợ thi công – lắp đặt thiết bị" (icon `WrenchIcon`). `content` (thân bài đầy đủ) chuyển nguyên văn từ s1.pdf/s2.pdf thành khối heading/paragraph/list/image; tiêu đề chính là `name`, đoạn kêu gọi cuối bài bỏ vì đã có `ContactCta`. **Chữ in đậm giữa câu của PDF không giữ** (khối `paragraph` chỉ có `text` thuần). `details` (gạch đầu dòng khi rê chuột ở /services) tóm tắt lại từ chính nội dung PDF. Ảnh (đã nén JPG) ở `public/images/services/`: `kho-hang`, `van-chuyen-noi-thanh` (nguồn Trung Quân Phát), `tho-dien-lap-dat`, `khao-sat-thi-cong` (chú thích "Nguồn: Internet", **cần kiểm tra bản quyền** trước khi dùng thật). Không thêm cam kết bảo hành, thời gian hay giá khi chưa có thông tin thật.
@@ -438,4 +440,4 @@ Dữ liệu còn là mẫu: `coreValues` trong `config/home.ts`.
 
 ## Chưa làm / để sau
 
-Auth còn thiếu: quên / đổi mật khẩu, đăng nhập Google trên web, chuyển token sang cookie `httpOnly`. Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).
+Auth còn thiếu: quên / đổi mật khẩu, chuyển token sang cookie `httpOnly`. Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).

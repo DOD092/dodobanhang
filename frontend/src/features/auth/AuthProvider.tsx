@@ -12,6 +12,8 @@ interface AuthContextValue {
   user: CurrentUser | null
   loading: boolean // đang kiểm tra token lúc mới mở trang
   login: (payload: LoginPayload) => Promise<void>
+  // Trả về isNewUser để trang hiện lời chào phù hợp
+  loginWithGoogle: (credential: string) => Promise<{ isNewUser: boolean }>
   logout: () => void
 }
 
@@ -40,14 +42,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false))
   }, [logout])
 
-  const login = useCallback(async (payload: LoginPayload) => {
-    const { accessToken } = await authAPI.login(payload)
+  // Dùng chung cho mọi cách đăng nhập: lưu token rồi lấy thông tin đầy đủ (role, customerInfo...)
+  const applyToken = useCallback(async (accessToken: string) => {
     localStorage.setItem(TOKEN_KEY, accessToken)
     setUser(await authAPI.getMe(accessToken))
   }, [])
 
+  const login = useCallback(
+    async (payload: LoginPayload) => {
+      const { accessToken } = await authAPI.login(payload)
+      await applyToken(accessToken)
+    },
+    [applyToken]
+  )
+
+  const loginWithGoogle = useCallback(
+    async (credential: string) => {
+      const { accessToken, isNewUser } = await authAPI.loginWithGoogle(credential)
+      await applyToken(accessToken)
+      return { isNewUser }
+    },
+    [applyToken]
+  )
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 
