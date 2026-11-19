@@ -30,6 +30,7 @@ import { LoginDto } from './dto/login.dto';
 import { IAuthService, LoginResult } from './interface/auth-service.interface';
 import { JwtPayload } from './interface/jwt-payload.interface';
 import { VerifyCustomerEmailDto, VerifyCustomerEmailResponseDto } from './dto/verify-customer-email.dto';
+import { ResendVerificationDto, ResendVerificationResponseDto } from './dto/resend-verification.dto';
 import { IMailService } from '../mail/interface/mail-service.interface';
 import { ForgotPasswordDto,ForgotPasswordResponseDto } from './dto/forgot-password.dto';
 import{ResetPasswordDto, ResetPasswordResponseDto} from './dto/reset-password.dto';
@@ -345,11 +346,28 @@ export class AuthService implements IAuthService {
     return `CUS-${timePart}-${randomPart}`;
   }
 
+  // "Chờ xác thực email" = INACTIVE + còn verificationCode. INACTIVE mà code = null là bị admin
+  // khoá (xem assertCanLogin) -> KHÔNG được cho xác thực / gửi lại mã, nếu không user tự mở khoá được.
+  private isPendingVerification(user: User): boolean {
+    return user.status === UserStatus.INACTIVE && user.verificationCode !== null;
+  }
+
+  // Chặn xác thực / gửi lại mã khi tài khoản không ở trạng thái chờ xác thực
+  private assertPendingVerification(user: User): void {
+    if (user.status === UserStatus.ACTIVE) {
+      throw new BadRequestException('Tài khoản đã được xác thực.');
+    }
+    if (!this.isPendingVerification(user)) {
+      throw new ForbiddenException('Tài khoản đã bị khoá hoặc vô hiệu hoá.');
+    }
+  }
+
   async verifyCustomerEmail(dto: VerifyCustomerEmailDto): Promise<VerifyCustomerEmailResponseDto> {
     const user=await this.userRepository.findByEmail(dto.email);
     if(!user){
       throw new UnauthorizedException('Email không tồn tại.');
     }
+    this.assertPendingVerification(user);
     if(user.verificationCode !== dto.verificationCode) {
       throw new UnauthorizedException('Mã xác thực không đúng.');
     }
@@ -361,14 +379,12 @@ export class AuthService implements IAuthService {
     return { message: 'Xác thực email thành công.' };
   } 
 
-  async resendVerificationCode(dto: VerifyCustomerEmailDto): Promise<VerifyCustomerEmailResponseDto> {
+  async resendVerificationCode(dto: ResendVerificationDto): Promise<ResendVerificationResponseDto> {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
       throw new UnauthorizedException('Email không tồn tại.');
     }
-    if (user.status === UserStatus.ACTIVE) {
-      throw new UnauthorizedException('Tài khoản đã được xác thực.');
-    }
+    this.assertPendingVerification(user);
     const newVerificationCode = randomInt(100000, 1000000).toString();
     const verificationExpireAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 

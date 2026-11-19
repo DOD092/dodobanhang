@@ -531,5 +531,12 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
   `throw` → sai mật khẩu vẫn nhận token.
 - **`resend-verification-code`** nhận nhầm `VerifyCustomerEmailDto` (bắt buộc `verificationCode`) nên
   gửi `{ email }` bị 400. Đã đổi sang `ResendVerificationDto`.
+- **`verify-email` / `resend-verification-code` chỉ nhận tài khoản đang chờ xác thực** (20/11/2026,
+  `isPendingVerification` = `INACTIVE` + còn `verificationCode`). Trước đó resend chỉ chặn `ACTIVE`:
+  tài khoản bị admin khoá (`INACTIVE`, code `null`), `BLOCKED`, `DELETED` xin được mã mới rồi verify →
+  `ACTIVE` = **tự mở khoá**. Nay: đã `ACTIVE` → 400 "Tài khoản đã được xác thực.", bị khoá → 403.
+  Đã test đủ luồng trên DB Postgres tạm (đăng ký, login chưa xác thực 403, sai mã, mã cũ sau khi gửi lại,
+  mã hết hạn, xác thực, login, admin khoá rồi thử tự mở). Còn thiếu: giới hạn số lần nhập sai mã
+  (6 số, hiện có thể dò trong 5 phút) và giới hạn tần suất gửi lại mã ở backend.
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.

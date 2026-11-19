@@ -293,7 +293,7 @@ Trang (app/register, verify-email, login, account)
 | Bước | Luồng |
 |---|---|
 | Đăng ký | `RegisterForm` → `register()` (bỏ `confirmPassword`, `phone` rỗng thì không gửi, vì backend chặn field lạ → 400) → `/verify-email?email=...`. Email trùng → 409 "Email đã tồn tại" |
-| Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sau 1 giây sang `/login`. Mã sống 5 phút; nút "Gửi lại mã" gọi `resendVerificationCode(email)` |
+| Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sang `/login?verified=1&email=...` (điền sẵn email, focus ô mật khẩu, hiện "Xác thực email thành công"). Đếm ngược mã 5:00; "Gửi lại mã" (`resendVerificationCode`) khoá 60 giây sau mỗi lần gửi (chỉ chặn ở client). Ô mã `autoComplete="one-time-code"`. Vào từ `/login` khi tài khoản chưa xác thực thì URL có `&from=login`: không đếm ngược, cho gửi lại ngay. Báo "đã được xác thực" thì hiện link đăng nhập |
 | Đăng nhập | `LoginForm` gọi `useAuth().login()` (không gọi `authAPI` trực tiếp): `login()` → lưu `accessToken` vào `localStorage` → `getMe(token)` → `setUser` → `/account`. 401 sai email/mật khẩu; 403 "chưa xác thực" → chuyển `/verify-email` |
 | Mở lại / F5 | `AuthProvider` đọc token trong `localStorage`, gọi `getMe`; lỗi (hết hạn 1 ngày, sai) thì `logout()`. Trong lúc chờ `loading = true` (Header ẩn link "Tài khoản", `/account` hiện "Đang tải...") |
 | Đăng xuất | `logout()`: xoá token + `setUser(null)` |
