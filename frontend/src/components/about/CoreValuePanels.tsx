@@ -44,11 +44,17 @@ export default function CoreValuePanels() {
             onClick={() => setActive(index)}
             className={`relative flex min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-t-4 border-b-4 border-neutral-300 border-t-brand-primary bg-white p-6 shadow-md outline-none transition-all duration-500 ease-out focus-visible:ring-4 focus-visible:ring-brand-primary/30 sm:p-8 lg:cursor-pointer lg:p-6 xl:p-7 ${
               open
-                ? 'lg:flex-3 lg:border-neutral-950 lg:border-t-brand-primary lg:bg-neutral-950 lg:text-white lg:shadow-xl'
+                ? 'lg:flex-3 lg:border-brand-primary lg:border-t-brand-accent lg:bg-brand-primary lg:text-white lg:shadow-xl'
                 : `lg:flex-1 ${active === null ? '' : 'lg:border-t-transparent'}`
             }`}
           >
-            <span className="relative mb-5 flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-primary text-white">
+            <span
+              className={`relative mb-5 flex size-14 shrink-0 items-center justify-center rounded-2xl transition-colors duration-500 ${
+                open
+                  ? 'bg-brand-primary text-white lg:bg-brand-accent lg:text-brand-primary'
+                  : 'bg-brand-primary text-white'
+              }`}
+            >
               <Icon className="size-7" />
             </span>
 

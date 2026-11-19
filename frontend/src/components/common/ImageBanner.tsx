@@ -36,7 +36,7 @@ export default function ImageBanner({
   children,
 }: ImageBannerProps) {
   return (
-    <section className="relative isolate overflow-hidden bg-neutral-950 text-white">
+    <section className="relative isolate overflow-hidden bg-brand-primary text-white">
       <Image
         src={image.src}
         alt={image.alt}
@@ -47,7 +47,7 @@ export default function ImageBanner({
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-linear-to-r from-neutral-950/90 via-neutral-950/60 to-neutral-950/20"
+        className="absolute inset-0 -z-10 bg-linear-to-r from-brand-primary/95 via-brand-primary/60 to-brand-primary/20"
       />
       <div
         className={`container flex min-h-80 flex-col justify-center pt-10 md:min-h-104 lg:min-h-120 ${
@@ -58,7 +58,7 @@ export default function ImageBanner({
         <div className="mb-6 [&_ol]:text-neutral-300 [&_[aria-current]]:text-white">
           <Breadcrumbs items={breadcrumbs} />
         </div>
-        <span className="mb-4 block h-1 w-16 bg-brand-primary" aria-hidden="true" />
+        <span className="mb-4 block h-1 w-16 bg-brand-accent" aria-hidden="true" />
         <h1 className="mb-0 text-3xl font-bold tracking-wide uppercase md:text-5xl">{title}</h1>
         {subtitle && <p className="mt-3 mb-0 max-w-2xl text-neutral-200 md:text-lg">{subtitle}</p>}
         {children}

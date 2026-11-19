@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     'dodobanhang - tầm nhìn, sứ mệnh và giá trị cốt lõi.',
 }
 
-// Ảnh nền banner đầu trang: ảnh bìa web (chủ dự án thiết kế, 1360×540, cùng ảnh Hero trang chủ).
+// Ảnh nền banner đầu trang: ảnh Hero trang chủ đã xoá nửa trái có chữ (public/images/banner-bg.png, 1440×520), chỉ còn hình cửa hàng bên phải.
 // Ảnh có sẵn logo, slogan, 4 biểu tượng nên dưới lớp phủ tối sẽ thành họa tiết mờ phía sau chữ.
 const bannerImage: BannerImage = {
-  src: '/images/home-banner.png',
-  alt: `${siteConfig.shortName} - Thiết bị công nghiệp, chất lượng tạo nên niềm tin`,
-  position: 'object-center',
+  src: '/images/banner-bg.png',
+  alt: `${siteConfig.shortName} - Mua sắm cùng dodo, đặt hàng ngay`,
+  position: 'object-right',
 }
 
 // Tiêu đề section, cùng kiểu đầu trang (PageHeader) cho cả trang thống nhất: gạch đỏ ngắn phía

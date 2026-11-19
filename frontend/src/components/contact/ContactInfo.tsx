@@ -20,22 +20,22 @@ function InfoRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
 // xám nhạt + hoạ tiết tổ ong SVG). Ảnh là ảnh LCP của trang nên preload.
 export default function ContactInfo() {
   return (
-    <section className="relative isolate overflow-hidden bg-neutral-950 text-white">
+    <section className="relative isolate overflow-hidden bg-brand-primary text-white">
       <Image
-        src="/images/home-banner.png"
-        alt={`${siteConfig.shortName} - Thiết bị công nghiệp, chất lượng tạo nên niềm tin`}
+        src="/images/banner-bg.png"
+        alt={`${siteConfig.shortName} - Mua sắm cùng dodo, đặt hàng ngay`}
         fill
         preload
         sizes="100vw"
-        className="-z-20 object-cover object-center"
+        className="-z-20 object-cover object-right"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-linear-to-r from-neutral-950/90 via-neutral-950/70 to-neutral-950/30"
+        className="absolute inset-0 -z-10 bg-linear-to-r from-brand-primary/95 via-brand-primary/70 to-brand-primary/30"
       />
 
       <div className="container py-12 md:py-16">
-        <span className="mb-4 block h-1 w-16 bg-brand-primary" aria-hidden="true" />
+        <span className="mb-4 block h-1 w-16 bg-brand-accent" aria-hidden="true" />
         <h1 className="mb-2 text-3xl font-bold tracking-wide uppercase md:text-5xl">
           Liên hệ chúng tôi
         </h1>

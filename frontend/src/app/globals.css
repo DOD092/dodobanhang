@@ -18,13 +18,18 @@
 }
 
 /*
-  Màu thương hiệu: xanh lá #15803D (green-700) là màu chính, đi kèm trắng + đen (dùng neutral-900/950 có sẵn).
+  Màu thương hiệu (19/11/2026, lấy từ bộ nhận diện dodobanhang - frontend/design/logo-dodo-brand-sheet.png):
+  xanh cổ vịt #0F3D3E là màu chính; vàng #FFD66B (accent: nút nổi trên nền tối, viền nhấn); cam san hô
+  #FF6B4A (điểm xuyết); kem #FFF8EC (nền nhạt). Chữ thường vẫn neutral-900.
   Dùng như: text-brand-primary, bg-brand-primary, hover:text-brand-primary-dark.
 */
 @theme {
-  --color-brand-primary: #15803d;
-  --color-brand-primary-dark: #166534;
-  --color-brand-primary-light: #dcfce7;
+  --color-brand-primary: #0f3d3e;
+  --color-brand-primary-dark: #0a2b2c;
+  --color-brand-primary-light: #fff8ec;
+  --color-brand-accent: #ffd66b;
+  --color-brand-accent-dark: #f5c544;
+  --color-brand-coral: #ff6b4a;
 
   /* Băng chuyền chạy ngang (components/common/Marquee.tsx): dải gồm 2 nửa giống nhau, trượt đúng
      1 nửa rồi lặp. Thời lượng đặt riêng bằng style `animationDuration` theo số thẻ. */
@@ -138,7 +143,7 @@
   .form-input:focus {
     outline: none;
     border-color: var(--color-brand-primary);
-    box-shadow: 0 0 0 4px rgb(21 128 61 / 25%);
+    box-shadow: 0 0 0 4px rgb(15 61 62 / 25%);
   }
   .form-input.is-invalid {
     border-color: #dc2626; /* red-600 */

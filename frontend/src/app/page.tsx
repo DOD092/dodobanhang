@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import CoreValues from '@/components/home/CoreValues'
 import CustomerReviews from '@/components/home/CustomerReviews'
+import CtaStrip from '@/components/home/CtaStrip'
 import HeroBanner from '@/components/home/HeroBanner'
 import Highlights from '@/components/home/Highlights'
 import CategoryCard from '@/components/product/CategoryCard'
@@ -94,6 +95,8 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      <CtaStrip />
 
       <section className="container py-16">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

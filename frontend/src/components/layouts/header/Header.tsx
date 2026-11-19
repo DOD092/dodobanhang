@@ -41,7 +41,7 @@ export default function Header() {
             {!loading && (
               <Link
                 href={user ? '/account' : '/login'}
-                className="px-2 text-sm font-semibold whitespace-nowrap text-neutral-900 hover:text-brand-primary"
+                className="btn rounded-full bg-brand-accent px-4 py-2 text-sm whitespace-nowrap text-brand-primary hover:bg-brand-accent-dark"
               >
                 Tài khoản
               </Link>

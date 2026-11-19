@@ -11,11 +11,11 @@ import {
 } from '@/components/common/Icons'
 import { mapUrl, navItems, siteConfig } from '@/config/site'
 
-// Một dòng liên hệ: icon trắng trong vòng tròn đỏ (đỏ trên nền đen mới đủ nổi) + nội dung
+// Một dòng liên hệ: icon xanh trong vòng tròn vàng (accent) + nội dung
 function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <li className="flex items-start gap-x-3">
-      <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
+      <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-accent text-brand-primary">
         {icon}
       </span>
       <div className="min-w-0">{children}</div>
@@ -24,26 +24,26 @@ function ContactRow({ icon, children }: { icon: ReactNode; children: ReactNode }
 }
 
 const socialClass =
-  'flex h-9 items-center justify-center rounded-full border border-neutral-700 text-sm font-semibold text-neutral-200 no-underline transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white'
+  'flex h-9 items-center justify-center rounded-full border border-white/25 text-sm font-semibold text-neutral-100 no-underline transition-colors hover:border-brand-accent hover:bg-brand-accent hover:text-brand-primary'
 
 export default function Footer() {
   const { zalo, facebook } = siteConfig.socials
 
   return (
-    <footer className="mt-auto border-t-4 border-brand-primary bg-neutral-950 text-neutral-200">
+    <footer className="mt-auto border-t-4 border-brand-accent bg-brand-primary text-neutral-100">
       <div className="container py-12">
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-12">
           <div className="md:col-span-5">
-            {/* Logo SVG nền xanh (logo.svg) đặt được trên nền tối; tên thương hiệu xuống dưới. */}
+            {/* Icon app nền vàng (cắt từ bộ nhận diện) nổi trên nền xanh của footer */}
             <Image
-              src="/images/logo.svg"
+              src="/images/brand/dodo-icon-yellow.png"
               alt=""
               width={56}
               height={56}
-              className="mb-4 h-14 w-auto rounded-lg"
+              className="mb-4 size-14"
             />
             <h2 className="mb-4 text-lg leading-snug font-bold text-white">{siteConfig.name}</h2>
-            <p className="mb-6 text-sm text-neutral-300">{siteConfig.description}</p>
+            <p className="mb-6 text-sm text-white/75">{siteConfig.description}</p>
 
             {(zalo || facebook) && (
               <ul className="m-0 flex list-none gap-x-3 p-0" aria-label="Mạng xã hội">
@@ -83,7 +83,10 @@ export default function Footer() {
             <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-2 p-0 text-sm md:flex-col">
               {navItems.map((item) => (
                 <li key={item.href}>
-                  <Link href={item.href} className="text-neutral-300 no-underline hover:text-white">
+                  <Link
+                    href={item.href}
+                    className="text-white/75 no-underline hover:text-brand-accent"
+                  >
                     {item.label}
                   </Link>
                 </li>
@@ -93,7 +96,7 @@ export default function Footer() {
 
           <div className="md:col-span-4">
             <h3 className="mb-3 text-base font-semibold text-white">Liên hệ</h3>
-            <ul className="m-0 list-none space-y-3 p-0 text-sm text-neutral-300">
+            <ul className="m-0 list-none space-y-3 p-0 text-sm text-white/75">
               <ContactRow icon={<PhoneCallIcon className="size-3" strokeWidth={2.25} />}>
                 <a
                   href={`tel:${siteConfig.phone}`}
@@ -128,7 +131,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-neutral-800 py-3 text-center text-xs text-neutral-400">
+      <div className="border-t border-white/10 py-3 text-center text-xs text-white/60">
         © {new Date().getFullYear()} {siteConfig.name}. Bảo lưu mọi quyền.
       </div>
     </footer>

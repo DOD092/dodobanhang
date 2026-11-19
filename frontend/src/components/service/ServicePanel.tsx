@@ -21,9 +21,9 @@ export default function ServicePanel({ service }: { service: Service }) {
   return (
     <li
       tabIndex={-1}
-      className="group relative flex min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-t-4 border-b-4 border-neutral-300 border-t-brand-primary p-6 shadow-md outline-none transition-all duration-500 ease-out sm:p-8 lg:flex-1 lg:p-6 xl:p-8 lg:focus-within:flex-2 lg:focus-within:border-neutral-950 lg:focus-within:border-t-brand-primary lg:focus-within:bg-neutral-950 lg:focus-within:text-white lg:focus-within:shadow-xl lg:hover:flex-2 lg:hover:border-neutral-950 lg:hover:border-t-brand-primary lg:hover:bg-neutral-950 lg:hover:text-white lg:hover:shadow-xl"
+      className="group relative flex min-w-0 flex-col overflow-hidden rounded-3xl border-2 border-t-4 border-b-4 border-neutral-300 border-t-brand-primary p-6 shadow-md outline-none transition-all duration-500 ease-out sm:p-8 lg:flex-1 lg:p-6 xl:p-8 lg:focus-within:flex-2 lg:focus-within:border-brand-primary lg:focus-within:border-t-brand-accent lg:focus-within:bg-brand-primary lg:focus-within:text-white lg:focus-within:shadow-xl lg:hover:flex-2 lg:hover:border-brand-primary lg:hover:border-t-brand-accent lg:hover:bg-brand-primary lg:hover:text-white lg:hover:shadow-xl"
     >
-      <span className="relative mb-6 flex size-16 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white">
+      <span className="relative mb-6 flex size-16 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-colors duration-500 lg:group-focus-within:bg-brand-accent lg:group-focus-within:text-brand-primary lg:group-hover:bg-brand-accent lg:group-hover:text-brand-primary">
         <Icon className="size-8" />
       </span>
 
