@@ -13,6 +13,19 @@ export function resendVerificationCode(email: string) {
   return apiPost<{ message: string }>('/auth/resend-verification-code', { email })
 }
 
+// Luôn trả cùng 1 câu dù email có tồn tại hay không (backend không lộ email nào đã đăng ký)
+export function forgotPassword(email: string) {
+  return apiPost<{ message: string }>('/auth/forgot-password', { email })
+}
+
+export function resetPassword(email: string, passwordResetCode: string, newPassword: string) {
+  return apiPost<{ message: string }>('/auth/reset-password', {
+    email,
+    passwordResetCode,
+    newPassword,
+  })
+}
+
 export function login(payload: LoginPayload) {
   return apiPost<{ accessToken: string }>('/auth/login', payload)
 }

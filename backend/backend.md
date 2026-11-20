@@ -543,5 +543,9 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
   **không thêm cột** (DB dùng chung + `synchronize`). Áp dụng cả lần gửi đầu lúc đăng ký. Gửi mail lỗi →
   trả lại `verificationExpireAt` cũ (không khoá oan) + **500** "Gửi email thất bại..." (trước đây lỗi mail
   văng 500 thô). Frontend đọc N trong câu 429 để khoá nút đúng N giây.
+- **Quên mật khẩu** (20/11/2026, web: `/forgot-password`): `forgotPassword` gửi mail lỗi chỉ log, vẫn trả câu
+  chung (trước đây văng 500 → lộ email nào có tài khoản). `ResetPasswordDto.newPassword` thêm `@MaxLength(72)`.
+  Cột DB: `reset_password_code`, `reset_password_expire_at` (mã 6 số, hạn 5 phút). Còn thiếu: giới hạn số lần
+  nhập sai mã và tần suất gửi lại (như `resend-verification-code`).
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.

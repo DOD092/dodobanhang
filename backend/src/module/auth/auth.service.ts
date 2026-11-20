@@ -443,7 +443,16 @@ export class AuthService implements IAuthService {
       passwordResetExpireAt:passwordResetExpireAt,
     })
 
-    await this.mailService.sendPasswordResetEmail(user.email,passwordResetCode);
+    // Lỗi gửi mail không được lộ ra client: nếu trả 500 thì ai cũng phân biệt được email nào
+    // có tài khoản (email không tồn tại luôn nhận câu trả lời chung bên dưới).
+    try {
+      await this.mailService.sendPasswordResetEmail(user.email,passwordResetCode);
+    } catch (error) {
+      this.logger.error(
+        `Gửi mã đặt lại mật khẩu tới ${user.email} thất bại`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
     return { message: 'Nếu email tồn tại, đặt lại mật khẩu đã được gửi' };
   }
 
