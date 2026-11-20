@@ -99,7 +99,7 @@ frontend/
    ├─ features/                  dữ liệu + hàm truy cập theo từng domain
    ├─ components/                UI tái sử dụng
    │  ├─ layouts/header/         Header, Logo, NavLinks (HeaderSearch.tsx còn file nhưng không dùng, 18/11/2026)
-   │  ├─ auth/                   RegisterForm, VerifyEmailForm, ResendVerificationForm, ForgotPasswordForm, LoginForm, GoogleLoginButton, AuthDivider
+   │  ├─ auth/                   RegisterForm, VerifyEmailForm, ResendVerificationForm, ForgotPasswordForm, ChangePasswordForm, LoginForm, GoogleLoginButton, AuthDivider
    │  ├─ layouts/footer/         Footer
    │  ├─ home/                   HeroBanner, Highlights (+ HighlightsList), CoreValues, CustomerReviews, coreValueIcons.ts
    │  ├─ about/                  CoreValuePanels (giá trị cốt lõi dạng panel mở rộng ở /about), VisionMissionTabs (Tầm nhìn / Sứ mệnh dạng tab)
@@ -295,6 +295,7 @@ Trang (app/register, verify-email, login, account)
 | Đăng ký | `RegisterForm` → `register()` (bỏ `confirmPassword`, `phone` rỗng thì không gửi, vì backend chặn field lạ → 400) → `/verify-email?email=...`. Email trùng → 409 "Email đã tồn tại" |
 | Xác thực | `VerifyEmailForm` → `verifyEmail(email, code)` → user `ACTIVE` → sang `/login?verified=1&email=...` (điền sẵn email, focus ô mật khẩu, hiện "Xác thực email thành công"). Đếm ngược mã 5:00; "Gửi lại mã" (`resendVerificationCode`) khoá 60 giây sau mỗi lần gửi (chỉ chặn ở client). Ô mã `autoComplete="one-time-code"`. Vào từ `/login` khi tài khoản chưa xác thực thì URL có `&from=login`: không đếm ngược, cho gửi lại ngay. Báo "đã được xác thực" thì hiện link đăng nhập. Backend trả 429 (gửi lại < 60 giây) thì lấy N giây trong câu báo để khoá nút |
 | Quên mật khẩu (20/11/2026) | Link "Quên mật khẩu?" cạnh ô mật khẩu ở `/login` (mang theo email đã gõ) → `/forgot-password` (`ForgotPasswordForm`, 2 bước cùng trang): nhập email → `forgotPassword()` (`POST /api/auth/forgot-password`, backend luôn trả cùng 1 câu nên luôn sang bước 2) → nhập mã 6 số + mật khẩu mới 2 lần (`resetPasswordSchema`) → `resetPassword()` (`POST /api/auth/reset-password`) → `/login?reset=1&email=...`. `LoginForm` nhận `notice` (thay prop `verified` cũ) để hiện thông báo từ bước trước |
+| Đổi mật khẩu (20/11/2026) | `/account` có khung "Đổi mật khẩu" (`ChangePasswordForm`): mật khẩu hiện tại + mới 2 lần (`changePasswordSchema`, mới phải khác cũ) → `changePassword(token, ...)` (`POST /api/auth/change-password`, Bearer). 401 → `logout()` + `/login`. Tài khoản chỉ có Google → 400 kèm link "Tạo mật khẩu" sang `/forgot-password`. `AuthProvider` nay cung cấp thêm **`token`** (dùng cho mọi API cần đăng nhập). JWT cũ vẫn hợp lệ tới khi hết hạn (backend chưa thu hồi token) |
 | Gửi lại mã khi không còn trang nhập mã | `/verify-email` **không có `?email`** → `ResendVerificationForm` (nhập email → `resendVerificationCode` → `/verify-email?email=...&sent=1`; bị 429 thì mã trước còn hạn → sang thẳng trang nhập mã). Lối vào: link "Chưa nhận được email xác thực? Gửi lại mã" ở `/login`. Trước đây thiếu email thì `redirect('/register')` |
 | Đăng nhập | `LoginForm` gọi `useAuth().login()` (không gọi `authAPI` trực tiếp): `login()` → lưu `accessToken` vào `localStorage` → `getMe(token)` → `setUser` → `/account`. 401 sai email/mật khẩu; 403 "chưa xác thực" → chuyển `/verify-email` |
 | Mở lại / F5 | `AuthProvider` đọc token trong `localStorage`, gọi `getMe`; lỗi (hết hạn 1 ngày, sai) thì `logout()`. Trong lúc chờ `loading = true` (Header ẩn link "Tài khoản", `/account` hiện "Đang tải...") |
@@ -338,7 +339,7 @@ Tên field giữ đúng snake_case theo schema:
 | `domain/` | `domainData.ts`, `domainAPI.ts` | `getDomains()` |
 | `contact/` | `contactAPI.ts`, `contactSchema.ts` | `createContact(payload)` → `POST /api/contacts` (gọi từ trình duyệt; backend gửi email tới `CONTACT_EMAIL`, không lưu DB; 429 khi gửi quá 5 lần/10 phút, `ContactForm` hiện đúng thông báo của backend). `contactSchema` (Zod, khớp DTO backend): tên 2-100 ký tự, SĐT VN `0`/`+84` + 9 số (bỏ khoảng trắng, dấu chấm, gạch), email hợp lệ (≤ 150), nội dung 10-2000 ký tự |
 | `review/` | `reviewData.ts`, `reviewAPI.ts` | `getReviews()` |
-| `auth/` | `authAPI.ts`, `authSchema.ts`, `AuthProvider.tsx` | `register`, `verifyEmail`, `resendVerificationCode`, `forgotPassword`, `resetPassword`, `login`, `loginWithGoogle(credential)`, `getMe(token)`; `registerSchema` / `loginSchema` (Zod); `AuthProvider` + `useAuth()`. Xem mục "Đăng ký / đăng nhập" |
+| `auth/` | `authAPI.ts`, `authSchema.ts`, `AuthProvider.tsx` | `register`, `verifyEmail`, `resendVerificationCode`, `forgotPassword`, `resetPassword`, `changePassword(token, ...)`, `login`, `loginWithGoogle(credential)`, `getMe(token)`; `registerSchema` / `loginSchema` (Zod); `AuthProvider` + `useAuth()`. Xem mục "Đăng ký / đăng nhập" |
 
 Dữ liệu thật:
 - **2 dịch vụ** (`serviceData.ts`, theo giấy phép - xem mục "Lĩnh vực kinh doanh"): id 1 "Tư vấn thiết bị công nghiệp" (icon `OrderIcon`), id 2 "Hỗ trợ thi công – lắp đặt thiết bị" (icon `WrenchIcon`). `content` (thân bài đầy đủ) chuyển nguyên văn từ s1.pdf/s2.pdf thành khối heading/paragraph/list/image; tiêu đề chính là `name`, đoạn kêu gọi cuối bài bỏ vì đã có `ContactCta`. **Chữ in đậm giữa câu của PDF không giữ** (khối `paragraph` chỉ có `text` thuần). `details` (gạch đầu dòng khi rê chuột ở /services) tóm tắt lại từ chính nội dung PDF. Ảnh (đã nén JPG) ở `public/images/services/`: `kho-hang`, `van-chuyen-noi-thanh` (nguồn Trung Quân Phát), `tho-dien-lap-dat`, `khao-sat-thi-cong` (chú thích "Nguồn: Internet", **cần kiểm tra bản quyền** trước khi dùng thật). Không thêm cam kết bảo hành, thời gian hay giá khi chưa có thông tin thật.
@@ -442,4 +443,4 @@ Dữ liệu còn là mẫu: `coreValues` trong `config/home.ts`.
 
 ## Chưa làm / để sau
 
-Auth còn thiếu: đổi mật khẩu khi đã đăng nhập, chuyển token sang cookie `httpOnly`. Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).
+Auth còn thiếu: thu hồi token khi đổi mật khẩu / đăng xuất, chuyển token sang cookie `httpOnly`. Redux/RTK Query, ESLint, i18n, SEO chi tiết, test. Dịch vụ + đánh giá trang chủ vẫn hardcode (chủ dự án chọn).

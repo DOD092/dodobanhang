@@ -30,6 +30,23 @@ export const resetPasswordSchema = z
     message: 'Mật khẩu nhập lại không khớp',
   })
 
+// Đổi mật khẩu khi đã đăng nhập: khớp ChangePasswordDto (mới 8-72 ký tự, phải khác mật khẩu cũ)
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Nhập mật khẩu hiện tại'),
+    newPassword: z.string().min(8, 'Mật khẩu tối thiểu 8 ký tự').max(72, 'Tối đa 72 ký tự'),
+    confirmPassword: z.string(),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Mật khẩu nhập lại không khớp',
+  })
+  .refine((v) => v.newPassword !== v.currentPassword, {
+    path: ['newPassword'],
+    message: 'Mật khẩu mới phải khác mật khẩu hiện tại',
+  })
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>

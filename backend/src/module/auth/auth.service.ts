@@ -493,7 +493,7 @@ export class AuthService implements IAuthService {
     }
     if (!user.passwordHash) {
       throw new BadRequestException(
-        'Tài khoản đăng nhập bằng Google chưa có mật khẩu.',
+        'Tài khoản đăng nhập bằng Google chưa có mật khẩu. Dùng "Quên mật khẩu" để tạo mật khẩu.',
       );
     }
     const isMatch=await bcrypt.compare(
@@ -503,6 +503,9 @@ export class AuthService implements IAuthService {
 
     if(!isMatch){
       throw new BadRequestException('Mật khẩu hiện tại không đúng',)
+    }
+    if (dto.newPassword === dto.currentPassword) {
+      throw new BadRequestException('Mật khẩu mới phải khác mật khẩu hiện tại.');
     }
     const passwordHash=await bcrypt.hash(dto.newPassword,10,);
     await this.userRepository.update(user.id,{passwordHash},);

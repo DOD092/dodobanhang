@@ -10,6 +10,7 @@ const TOKEN_KEY = 'accessToken'
 
 interface AuthContextValue {
   user: CurrentUser | null
+  token: string | null // gửi kèm header Authorization cho API cần đăng nhập
   loading: boolean // đang kiểm tra token lúc mới mở trang
   login: (payload: LoginPayload) => Promise<void>
   // Trả về isNewUser để trang hiện lời chào phù hợp
@@ -21,10 +22,12 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
+  const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
+    setToken(null)
     setUser(null)
   }, [])
 
@@ -37,7 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     authAPI
       .getMe(token)
-      .then(setUser)
+      .then((me) => {
+        setToken(token)
+        setUser(me)
+      })
       .catch(logout) // token hết hạn / sai -> xoá
       .finally(() => setLoading(false))
   }, [logout])
@@ -45,7 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Dùng chung cho mọi cách đăng nhập: lưu token rồi lấy thông tin đầy đủ (role, customerInfo...)
   const applyToken = useCallback(async (accessToken: string) => {
     localStorage.setItem(TOKEN_KEY, accessToken)
-    setUser(await authAPI.getMe(accessToken))
+    const me = await authAPI.getMe(accessToken)
+    setToken(accessToken)
+    setUser(me)
   }, [])
 
   const login = useCallback(
@@ -66,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   )

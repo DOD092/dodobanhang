@@ -36,6 +36,18 @@ export function loginWithGoogle(credential: string) {
   return apiPost<GoogleAuthResult>('/auth/google', { credential })
 }
 
+// Cần đăng nhập. Tài khoản chỉ có Google (chưa có mật khẩu) -> 400, hướng dẫn dùng "Quên mật khẩu"
+export function changePassword(
+  token: string,
+  payload: { currentPassword: string; newPassword: string }
+) {
+  return apiRequest<{ message: string }>(buildApiUrl('/auth/change-password'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  })
+}
+
 export function getMe(token: string) {
   return apiRequest<CurrentUser>(buildApiUrl('/auth/me'), {
     headers: { Authorization: `Bearer ${token}` },

@@ -547,5 +547,8 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
   chung (trước đây văng 500 → lộ email nào có tài khoản). `ResetPasswordDto.newPassword` thêm `@MaxLength(72)`.
   Cột DB: `reset_password_code`, `reset_password_expire_at` (mã 6 số, hạn 5 phút). Còn thiếu: giới hạn số lần
   nhập sai mã và tần suất gửi lại (như `resend-verification-code`).
+- **Đổi mật khẩu** (20/11/2026, web: `/account`): `ChangePasswordDto.newPassword` thêm `@MaxLength(72)`; mật
+  khẩu mới trùng mật khẩu hiện tại → 400; tài khoản chỉ có Google → 400 kèm hướng dẫn dùng "Quên mật khẩu".
+  JWT là stateless nên **token cũ vẫn dùng được tới khi hết hạn** sau khi đổi mật khẩu (chưa có cơ chế thu hồi).
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.
