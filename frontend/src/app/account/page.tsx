@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
+import ProfileSection from '@/components/account/ProfileSection'
 import ChangePasswordForm from '@/components/auth/ChangePasswordForm'
 import { useAuth } from '@/features/auth/AuthProvider'
 
@@ -18,12 +19,17 @@ export default function AccountPage() {
 
   if (loading || !user) return <p className="container py-12">Đang tải...</p>
 
-  const rows: [string, string][] = [
-    ['Email', user.email],
-    ['Điện thoại', user.phone ?? '—'],
-    ['Mã khách hàng', user.customerInfo?.customerCode ?? '—'],
-    ['Điểm thưởng', String(user.customerInfo?.loyaltyPoints ?? 0)],
-  ]
+  const isCustomer = user.role === 'CUSTOMER'
+  const rows: [string, string][] = isCustomer
+    ? [
+        ['Mã khách hàng', user.customerInfo?.customerCode ?? '—'],
+        ['Điểm thưởng', String(user.customerInfo?.loyaltyPoints ?? 0)],
+      ]
+    : [
+        ['Email', user.email],
+        ['Điện thoại', user.phone ?? '—'],
+        ['Vai trò', user.role],
+      ]
 
   return (
     <div className="container max-w-2xl space-y-8 py-12">
@@ -39,6 +45,14 @@ export default function AccountPage() {
           Đăng xuất
         </button>
       </div>
+
+      {/* Sửa hồ sơ + ảnh đại diện: API /customers/me/* chỉ cho role CUSTOMER */}
+      {isCustomer && (
+        <section className="rounded-2xl border-2 border-neutral-200 p-6">
+          <h2 className="mb-4 text-lg font-bold">Hồ sơ cá nhân</h2>
+          <ProfileSection />
+        </section>
+      )}
 
       <section className="rounded-2xl border-2 border-neutral-200 p-6">
         <h2 className="mb-4 text-lg font-bold">Thông tin tài khoản</h2>

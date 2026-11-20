@@ -93,6 +93,10 @@ export class CustomerService implements ICustomerService {
     };
   }
 
+  async getMyProfile(userId: string): Promise<CustomerProfileResponseDto> {
+    return this.getProfile(userId);
+  }
+
   async updateMyProfile(
     userId: string,
     dto: UpdateProfileDto,

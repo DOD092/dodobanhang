@@ -12,8 +12,8 @@ export class UpdateProfileDto{
   @IsOptional() @IsString() @IsNotEmpty() @MaxLength(150)
   fullName?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional() @IsString()   
+  @ApiPropertyOptional({ maxLength: 20 })
+  @IsOptional() @IsString() @MaxLength(20) // cùng giới hạn với đăng ký
   phone?: string;
 
   @ApiPropertyOptional({ type: String, format: 'date', example: '2004-02-09' })

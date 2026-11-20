@@ -16,6 +16,8 @@ export interface ICustomerService {
     customerCode: string,
     currentUser: any,
   ): Promise<GetCustomerByCodeResponseDto>;
+  getMyProfile(userId: string): Promise<CustomerProfileResponseDto>;
+
   updateMyProfile(
     userId: string,
     dto: UpdateProfileDto,

@@ -16,6 +16,7 @@ interface AuthContextValue {
   // Trả về isNewUser để trang hiện lời chào phù hợp
   loginWithGoogle: (credential: string) => Promise<{ isNewUser: boolean }>
   logout: () => void
+  refreshUser: () => Promise<void> // đọc lại /auth/me sau khi sửa hồ sơ
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -73,8 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applyToken]
   )
 
+  const refreshUser = useCallback(async () => {
+    if (token) setUser(await authAPI.getMe(token))
+  }, [token])
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, loginWithGoogle, logout, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

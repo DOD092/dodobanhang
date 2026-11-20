@@ -550,5 +550,13 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
 - **Đổi mật khẩu** (20/11/2026, web: `/account`): `ChangePasswordDto.newPassword` thêm `@MaxLength(72)`; mật
   khẩu mới trùng mật khẩu hiện tại → 400; tài khoản chỉ có Google → 400 kèm hướng dẫn dùng "Quên mật khẩu".
   JWT là stateless nên **token cũ vẫn dùng được tới khi hết hạn** sau khi đổi mật khẩu (chưa có cơ chế thu hồi).
+- **Hồ sơ khách hàng** (20/11/2026, web: `/account`): thêm **`GET /api/customers/me/profile`** (trước chỉ có
+  PATCH, web không đọc được ảnh/ngày sinh/giới tính; khai báo trước `:userId`). `UpdateProfileDto.phone` thêm
+  `@MaxLength(20)`. **Vá stored XSS ở upload ảnh** (`common/upload/avatar-upload.options.ts`, dùng chung
+  customer/admin/operator): đuôi file trước lấy từ `originalname` client gửi, nên `x.html` khai mimetype
+  `image/png` được lưu `.html` và phát công khai qua `/uploads` → nay đuôi lấy theo mimetype đã lọc
+  (`.jpg/.png/.webp`). Đã test: file HTML đội lốt giờ thành `.png`, phát với `image/png`.
+  ⚠️ `backend/uploads/` **không có trong `.gitignore`** và đã có 1 ảnh upload bị commit
+  (`uploads/avatars/9419fc8d-....jpg`): nên thêm `/uploads` vào `.gitignore` + `git rm --cached`.
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.

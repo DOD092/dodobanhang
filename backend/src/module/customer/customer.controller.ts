@@ -59,7 +59,19 @@ export class CustomerController {
     return this.customerService.findAll(pagination);
   }
 
-    @Patch('me/profile')
+  // Đọc hồ sơ của chính mình (ảnh, ngày sinh, giới tính...) để điền form sửa hồ sơ trên web.
+  // Khai báo trước ':userId' để không bị ParseUUIDPipe của route đó bắt.
+  @Get('me/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CUSTOMER')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Customer xem thông tin cá nhân của mình' })
+  @ApiResponse({ status: HttpStatus.OK, type: CustomerProfileResponseDto })
+  getMyProfile(@Req() req: any) {
+    return this.customerService.getMyProfile(req.user.id);
+  }
+
+  @Patch('me/profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('CUSTOMER')
   @ApiBearerAuth()
