@@ -1,72 +1,84 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { ArrowRightIcon } from '@/components/common/Icons'
 import type { Product } from '@/types/Product'
 import { formatPrice } from '@/utils/formatPrice'
 import { productImages } from '@/utils/imageUrl'
 import { productPath } from '@/utils/slug'
 
+import StarRating, { formatSold } from './StarRating'
+
 interface ProductCardProps {
   product: Product
-  categoryName?: string
   // Ảnh ở màn hình đầu tiên (above the fold) tải ngay; còn lại lazy load (mặc định của next/image)
   eager?: boolean
 }
 
-// Thẻ sản phẩm lẻ: cả thẻ dẫn tới /products/<slug>. Cùng kiểu hover với CategoryCard.
-export default function ProductCard({ product, categoryName, eager = false }: ProductCardProps) {
+/*
+  Thẻ sản phẩm kiểu sàn TMĐT (23/11/2026): ảnh vuông -> giá + % giảm -> tác giả/thương hiệu (chữ
+  hoa, xám) -> tên (2 dòng) -> sao + "Đã bán". Cả thẻ là 1 link tới /products/<slug>.
+  Giá null = "Liên hệ". Thương hiệu mặc định "Chưa phân loại" thì không hiện.
+*/
+export default function ProductCard({ product, eager = false }: ProductCardProps) {
+  const byline = product.author || (product.brandName !== 'Chưa phân loại' ? product.brandName : '')
+  const hasRating = product.ratingAverage !== null && product.reviewCount > 0
+
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border-2 border-b-4 border-neutral-300 bg-white shadow-md transition hover:-translate-y-1 hover:border-b-brand-primary hover:shadow-xl">
-      <div className="relative aspect-4/3 overflow-hidden bg-neutral-100">
+    <Link
+      href={productPath(product)}
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white text-inherit no-underline transition hover:border-neutral-300 hover:shadow-lg"
+    >
+      <div className="relative aspect-square overflow-hidden bg-white">
         <Image
           src={productImages(product.images)[0]}
           alt={product.name}
           fill
           loading={eager ? 'eager' : 'lazy'}
-          sizes="(min-width: 768px) 33vw, 50vw"
-          className="object-contain p-1 transition-transform duration-300 group-hover:scale-105"
+          sizes="(min-width: 1280px) 240px, (min-width: 768px) 30vw, 50vw"
+          className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
         />
-        {categoryName && (
-          <span className="absolute top-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-brand-primary shadow-sm">
-            {categoryName}
+        {product.discountPercent > 0 && (
+          <span className="absolute top-2 left-2 rounded-md bg-brand-coral px-1.5 py-0.5 text-xs font-bold text-white">
+            -{product.discountPercent}%
           </span>
         )}
       </div>
 
-      <div className="flex grow flex-col p-[1rem] sm:p-5">
-        {product.sku && (
-          <p className="mb-1 text-xs tracking-wide text-neutral-500">{product.sku}</p>
-        )}
-        <h3 className="mb-2 text-base font-bold sm:text-lg">{product.name}</h3>
-        <p className="mb-3 line-clamp-2 grow text-sm text-neutral-600">{product.description}</p>
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-          {product.price !== null ? (
-            <span className="font-bold text-brand-primary sm:text-lg">
+      <div className="flex grow flex-col gap-1 p-3">
+        {product.price !== null ? (
+          <p className="mb-0 flex flex-wrap items-baseline gap-x-1.5">
+            <span className="text-base font-bold text-red-600 sm:text-lg">
               {formatPrice(product.price)}
             </span>
-          ) : (
-            // Chưa niêm yết giá: nút bấm thẳng tới trang liên hệ, không chỉ là chữ. `relative z-10`
-            // để nổi lên trên lớp phủ `after:` của link "Chi tiết" bên dưới và vẫn bấm riêng được.
-            <Link
-              href="/contact"
-              aria-label={`Liên hệ về ${product.name}`}
-              className="btn btn-outline-primary relative z-10 rounded-full px-3 py-1 text-xs sm:text-sm"
-            >
-              Liên hệ
-            </Link>
-          )}
-          {/* after:absolute after:inset-0 phủ link lên cả thẻ */}
-          <Link
-            href={productPath(product)}
-            aria-label={`Xem chi tiết ${product.name}`}
-            className="inline-flex items-center gap-x-1 text-sm font-semibold text-neutral-900 no-underline after:absolute after:inset-0 group-hover:text-brand-primary"
-          >
-            Chi tiết
-            <ArrowRightIcon className="size-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </div>
+            {product.compareAtPrice !== null && (
+              <span className="text-xs text-neutral-400 line-through">
+                {formatPrice(product.compareAtPrice)}
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="mb-0 text-base font-bold text-brand-primary">Liên hệ</p>
+        )}
+
+        {byline && (
+          <p className="mb-0 truncate text-xs tracking-wide text-neutral-500 uppercase">{byline}</p>
+        )}
+        <h3 className="mb-0 line-clamp-2 text-sm leading-snug font-normal text-neutral-900 group-hover:text-brand-primary">
+          {product.name}
+        </h3>
+
+        {(hasRating || product.soldCount > 0) && (
+          <p className="mt-auto mb-0 flex items-center gap-x-1.5 pt-1 text-xs text-neutral-500">
+            {hasRating && (
+              <StarRating value={product.ratingAverage as number} className="text-xs" />
+            )}
+            {hasRating && product.soldCount > 0 && (
+              <span className="h-3 w-px bg-neutral-300" aria-hidden="true" />
+            )}
+            {product.soldCount > 0 && <span>Đã bán {formatSold(product.soldCount)}</span>}
+          </p>
+        )}
       </div>
-    </article>
+    </Link>
   )
 }

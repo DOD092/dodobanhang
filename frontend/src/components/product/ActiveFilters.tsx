@@ -6,6 +6,7 @@ import {
   hasActiveFilters,
   priceRanges,
   type ProductQuery,
+  RATING_FILTER,
 } from '@/features/product/productQuery'
 import type { Category } from '@/types/Category'
 
@@ -43,8 +44,14 @@ export default function ActiveFilters({
         <Chip href={buildProductsHref(query, { category: null })} label={category.name} />
       )}
       {price && <Chip href={buildProductsHref(query, { price: null })} label={price.label} />}
+      {query.rating && (
+        <Chip
+          href={buildProductsHref(query, { rating: false })}
+          label={`Từ ${RATING_FILTER} sao`}
+        />
+      )}
       <Link
-        href={buildProductsHref(query, { q: '', category: null, price: null })}
+        href={buildProductsHref(query, { q: '', category: null, price: null, rating: false })}
         scroll={false}
         className="ms-1 text-sm text-neutral-500 underline-offset-2 hover:text-brand-primary"
       >

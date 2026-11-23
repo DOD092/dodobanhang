@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
-import ContactCta from '@/components/common/ContactCta'
-import type { BreadcrumbItem } from '@/components/common/Breadcrumbs'
-import ImageBanner, { type BannerImage } from '@/components/common/ImageBanner'
+import Breadcrumbs, { type BreadcrumbItem } from '@/components/common/Breadcrumbs'
 import ActiveFilters from '@/components/product/ActiveFilters'
+import CategorySidebar from '@/components/product/CategorySidebar'
+import CategoryTiles from '@/components/product/CategoryTiles'
 import * as FiltersDrawer from '@/components/product/FiltersDrawer'
 import { PRODUCT_LIST_ID } from '@/components/product/Pagination'
 import ProductFilters from '@/components/product/ProductFilters'
@@ -16,33 +16,32 @@ import { siteConfig } from '@/config/site'
 import { getCategories, getCategoryBySlug } from '@/features/category/categoryAPI'
 import { hasPricedProducts } from '@/features/product/productAPI'
 import { buildProductsHref, parseProductQuery } from '@/features/product/productQuery'
-
-// Ảnh nền banner đầu trang: ảnh Hero trang chủ đã xoá nửa trái có chữ (public/images/banner-bg.png, 1440×520), chỉ còn hình cửa hàng bên phải.
-// Ảnh có sẵn logo, slogan, 4 biểu tượng nên dưới lớp phủ tối sẽ thành họa tiết mờ phía sau chữ.
-const bannerImage: BannerImage = {
-  src: '/images/banner-bg.png',
-  alt: `${siteConfig.shortName} - Mua sắm cùng dodo, đặt hàng ngay`,
-  position: 'object-right',
-}
+import { buildCategoryTree, findCategoryPath } from '@/utils/categoryTree'
 
 interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-// Tiêu đề tab theo nhóm đang lọc, vd "Inox - dodobanhang"
+// Tiêu đề tab theo nhóm đang lọc, vd "Sách văn học - dodobanhang"
 export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
   const query = parseProductQuery(await searchParams)
   const category = query.category !== null ? await getCategoryBySlug(query.category) : undefined
 
   return {
-    title: `${category?.name ?? 'Sản phẩm'} - ${siteConfig.shortName}`,
+    title: `${category?.name ?? 'Tất cả sản phẩm'} - ${siteConfig.shortName}`,
     description:
       category?.description ??
-      'Vòng bi, phụ kiện cơ khí, vật liệu nhôm, thiết bị nông nghiệp, năng lượng mặt trời và đèn LED chiếu sáng. Tư vấn, báo giá nhanh.',
+      `Mua sắm cùng ${siteConfig.shortName}: chọn sản phẩm, đặt hàng online.`,
   }
 }
 
-// Server Component: đọc bộ lọc từ URL, dữ liệu lọc sẵn trên server nên trang hiện ra kèm kết quả
+/*
+  Trang danh sách kiểu sàn TMĐT (23/11/2026):
+  - Trái (>= lg; mobile là drawer "Bộ lọc"): CategorySidebar (cây danh mục) + bộ lọc giá / sao.
+  - Phải: tiêu đề nhóm -> ô "Khám phá theo danh mục" (nhóm con) -> khung "Tất cả sản phẩm"
+    (tìm kiếm, sắp xếp, chip bộ lọc, lưới 2/3/4 cột, phân trang).
+  Server Component: bộ lọc đọc từ URL, dữ liệu lọc sẵn trên server.
+*/
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const [rawParams, categories, showPriceFilter] = await Promise.all([
     searchParams,
@@ -50,74 +49,86 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     hasPricedProducts(),
   ])
 
+  const tree = buildCategoryTree(categories)
   const parsed = parseProductQuery(rawParams)
+  const activePath = findCategoryPath(tree, parsed.category)
   // slug nhóm không tồn tại (link cũ, sửa tay) thì coi như không lọc theo nhóm
-  const query = categories.some((item) => item.slug === parsed.category)
-    ? parsed
-    : { ...parsed, category: null }
-
-  const activeCategory = categories.find((item) => item.slug === query.category)
-  const totalCount = categories.reduce((sum, item) => sum + item.productCount, 0)
-  const activeFilterCount = [query.q, query.category !== null, query.price].filter(Boolean).length
+  const query = activePath.length > 0 ? parsed : { ...parsed, category: null }
+  const activeCategory = activePath[activePath.length - 1]
+  const activeFilterCount = [query.q, query.category !== null, query.price, query.rating].filter(
+    Boolean
+  ).length
 
   const breadcrumbs: BreadcrumbItem[] = [
     { label: 'Trang chủ', href: '/' },
-    { label: 'Sản phẩm', href: '/products' },
-    ...(activeCategory ? [{ label: activeCategory.name }] : []),
+    { label: 'Sản phẩm', href: activeCategory ? '/products' : undefined },
+    ...activePath.map((node, index) => ({
+      label: node.name,
+      href:
+        index < activePath.length - 1
+          ? buildProductsHref(query, { category: node.slug })
+          : undefined,
+    })),
   ]
+  // Ô danh mục: nhóm con của nhóm đang xem; nhóm lá thì hiện các nhóm cùng cấp
+  const tiles = activeCategory
+    ? activeCategory.children.length > 0
+      ? activeCategory.children
+      : (activePath[activePath.length - 2]?.children ?? [])
+    : tree
 
   return (
-    <>
-      <ImageBanner
-        title={activeCategory?.name ?? 'Sản phẩm'}
-        subtitle={
-          activeCategory?.description ??
-          'Vòng bi, phụ kiện cơ khí, vật liệu nhôm, thiết bị nông nghiệp, năng lượng mặt trời và đèn LED chiếu sáng.'
-        }
-        breadcrumbs={breadcrumbs}
-        image={bannerImage}
-      >
-        <div className="mt-6 max-w-2xl">
-          <ProductSearch query={query} />
-        </div>
-      </ImageBanner>
+    <div className="bg-neutral-100 pb-12">
+      <div className="container py-3">
+        <Breadcrumbs items={breadcrumbs} />
+      </div>
 
-      <section className="container py-6 md:py-12">
+      <div className="container">
         <FiltersDrawer.Root watchKey={buildProductsHref(query)}>
-          <div className="grid grid-cols-1 gap-x-4 gap-y-6 lg:grid-cols-[260px_1fr] lg:gap-x-8">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr] lg:items-start">
             <FiltersDrawer.Panel>
-              <ProductFilters
-                query={query}
-                categories={categories}
-                totalCount={totalCount}
-                showPriceFilter={showPriceFilter}
-              />
+              <div className="space-y-6">
+                <CategorySidebar tree={tree} query={query} activePath={activePath} />
+                <ProductFilters query={query} showPriceFilter={showPriceFilter} />
+              </div>
             </FiltersDrawer.Panel>
 
-            <div>
-              {/* scroll-mt: chừa chỗ cho header dính khi phân trang cuộn về đây */}
-              <div
-                id={PRODUCT_LIST_ID}
-                className="mb-4 flex scroll-mt-24 flex-wrap items-center justify-between gap-3"
-              >
-                <FiltersDrawer.Trigger activeFilterCount={activeFilterCount} />
-                <div className="ms-auto">
-                  <SortSelect query={query} showPriceSort={showPriceFilter} />
+            <div className="min-w-0 space-y-4">
+              <header className="rounded-xl bg-white px-4 py-5 md:px-6">
+                <h1 className="mb-1 text-2xl font-bold md:text-3xl">
+                  {activeCategory?.name ?? 'Tất cả sản phẩm'}
+                </h1>
+                {activeCategory?.description && (
+                  <p className="mb-0 text-sm text-neutral-600">{activeCategory.description}</p>
+                )}
+              </header>
+
+              <CategoryTiles categories={tiles} query={query} />
+
+              <section className="rounded-xl bg-white p-3 md:p-5">
+                {/* scroll-mt: chừa chỗ cho header dính khi phân trang cuộn về đây */}
+                <div id={PRODUCT_LIST_ID} className="mb-4 scroll-mt-24 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="mb-0 text-base font-bold md:text-lg">Tất cả sản phẩm</h2>
+                    <div className="flex items-center gap-2">
+                      <FiltersDrawer.Trigger activeFilterCount={activeFilterCount} />
+                      <SortSelect query={query} showPriceSort={showPriceFilter} />
+                    </div>
+                  </div>
+                  <ProductSearch query={query} />
                 </div>
-              </div>
 
-              <ActiveFilters query={query} categories={categories} />
+                <ActiveFilters query={query} categories={categories} />
 
-              {/* key đổi theo bộ lọc: mỗi lần lọc lại hiện skeleton trong lúc stream kết quả mới */}
-              <Suspense key={buildProductsHref(query)} fallback={<ProductGridSkeleton />}>
-                <ProductGrid query={query} />
-              </Suspense>
+                {/* key đổi theo bộ lọc: mỗi lần lọc lại hiện skeleton trong lúc stream kết quả mới */}
+                <Suspense key={buildProductsHref(query)} fallback={<ProductGridSkeleton />}>
+                  <ProductGrid query={query} />
+                </Suspense>
+              </section>
             </div>
           </div>
         </FiltersDrawer.Root>
-      </section>
-
-      <ContactCta />
-    </>
+      </div>
+    </div>
   )
 }

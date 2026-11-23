@@ -2,18 +2,26 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import ContactCta from '@/components/common/ContactCta'
-import { PhoneCallIcon } from '@/components/common/Icons'
 import Breadcrumbs from '@/components/common/Breadcrumbs'
+import ExpandableText from '@/components/product/ExpandableText'
 import ProductCard from '@/components/product/ProductCard'
 import ProductGallery from '@/components/product/ProductGallery'
+import BuyBox from '@/components/product/purchase/BuyBox'
+import PriceAndVariants from '@/components/product/purchase/PriceAndVariants'
+import { PurchaseProvider } from '@/components/product/purchase/PurchaseContext'
+import StarRating, { formatSold } from '@/components/product/StarRating'
 import { siteConfig } from '@/config/site'
 import { getProductBySlug, getProductsByCategory } from '@/features/product/productAPI'
 import { buildProductsHref, defaultProductQuery } from '@/features/product/productQuery'
-import { formatPrice } from '@/utils/formatPrice'
 import { productImages } from '@/utils/imageUrl'
 
-const RELATED_LIMIT = 4
+const RELATED_LIMIT = 8
+
+// Giá trị thông số crawl từ Tiki: ngày dạng 'YYYY-MM-DD 00:00:00' -> 'DD/MM/YYYY'
+function formatSpecValue(value: string) {
+  const date = /^(\d{4})-(\d{2})-(\d{2})(?: 00:00:00)?$/.exec(value.trim())
+  return date ? `${date[3]}/${date[2]}/${date[1]}` : value
+}
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }> // slug lưu trong DB (cột products.slug, UNIQUE), xem utils/slug.ts
@@ -26,141 +34,158 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
   const product = await getProductBySlug((await params).slug)
   if (!product) return { title: `Không tìm thấy sản phẩm - ${siteConfig.shortName}` }
 
-  const description = product.shortDescription ?? product.description ?? undefined
+  const description = product.shortDescription ?? product.description?.slice(0, 160) ?? undefined
   return {
     title: `${product.name} - ${siteConfig.shortName}`,
     description,
-    // Thêm `images` khi có ảnh thật + domain (cần metadataBase trong app/layout.tsx)
     openGraph: { title: product.name, description },
   }
 }
 
+/*
+  Trang chi tiết kiểu sàn TMĐT (23/11/2026). >= lg: 3 cột
+    [ảnh + dải ảnh nhỏ] [tác giả, tên, sao | đã bán, giá, phân loại] [khung mua: số lượng, tạm tính, nút]
+  bên dưới: "Thông tin chi tiết" (bảng thông số), "Mô tả sản phẩm" (thu gọn), "Sản phẩm tương tự".
+  Cột giữa và khung mua dùng chung state qua PurchaseProvider (biến thể, số lượng).
+*/
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
   const { category } = product
-  // Lấy dư 1 vì danh sách có thể chứa chính sản phẩm này
-  const sameCategory = await getProductsByCategory(category.slug, RELATED_LIMIT + 1)
-  const related = sameCategory.filter((item) => item.id !== product.id).slice(0, RELATED_LIMIT)
-  const categoryHref = buildProductsHref(defaultProductQuery, { category: category.slug })
+  const path = product.categoryPath.length > 0 ? product.categoryPath : [category]
+  // Lấy dư 1 vì danh sách có thể chứa chính sản phẩm này. Nhóm lá ít sản phẩm (vd 'Sách kinh tế'
+  // chỉ 1 cuốn) thì lấy từ nhóm cha (backend lọc cả cây con nên đã gồm nhóm lá).
+  const parent = path.length > 1 ? path[path.length - 2] : undefined
+  let pool = await getProductsByCategory(category.slug, RELATED_LIMIT + 1)
+  if (pool.length <= RELATED_LIMIT / 2 && parent) {
+    pool = await getProductsByCategory(parent.slug, RELATED_LIMIT + 1)
+  }
+  const related = pool.filter((item) => item.id !== product.id).slice(0, RELATED_LIMIT)
+  const relatedCategory =
+    pool.some((item) => item.category.id !== category.id) && parent ? parent : category
+  const categoryHref = (categorySlug: string) =>
+    buildProductsHref(defaultProductQuery, { category: categorySlug })
+  const hasRating = product.ratingAverage !== null && product.reviewCount > 0
+  const byline = product.author
+    ? { label: 'Tác giả', value: product.author }
+    : product.brandName && product.brandName !== 'Chưa phân loại'
+      ? { label: 'Thương hiệu', value: product.brandName }
+      : null
 
   return (
-    <>
-      <div className="border-b border-neutral-200 bg-neutral-50">
-        <div className="container py-3">
-          <Breadcrumbs
-            items={[
-              { label: 'Trang chủ', href: '/' },
-              { label: 'Sản phẩm', href: '/products' },
-              { label: category.name, href: categoryHref },
-              { label: product.name },
-            ]}
-          />
-        </div>
+    <div className="bg-neutral-100 pb-12">
+      <div className="container py-3">
+        <Breadcrumbs
+          items={[
+            { label: 'Trang chủ', href: '/' },
+            { label: 'Sản phẩm', href: '/products' },
+            ...path.map((node) => ({ label: node.name, href: categoryHref(node.slug) })),
+            { label: product.name },
+          ]}
+        />
       </div>
 
-      <section className="container py-8 md:py-14">
-        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:gap-10">
-          <ProductGallery images={productImages(product.images)} alt={product.name} />
+      <div className="container space-y-4">
+        <PurchaseProvider variants={product.variants}>
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[400px_minmax(0,1fr)_300px]">
+            <div className="rounded-xl bg-white p-4 md:sticky md:top-24">
+              <ProductGallery images={productImages(product.images)} alt={product.name} />
+            </div>
 
-          <div>
-            <Link
-              href={categoryHref}
-              className="mb-3 inline-block rounded-full bg-brand-primary-light px-3 py-1 text-sm font-semibold text-brand-primary no-underline hover:bg-brand-primary hover:text-white"
-            >
-              {category.name}
-            </Link>
-            <span className="mb-3 block h-1 w-12 bg-brand-primary" aria-hidden="true" />
-            <h1 className="mb-2 text-2xl font-bold md:text-4xl">{product.name}</h1>
-            {product.sku && (
-              <p className="mb-4 text-sm text-neutral-500">
-                Mã sản phẩm: <span className="font-semibold text-neutral-900">{product.sku}</span>
-              </p>
-            )}
+            <div className="space-y-4">
+              <section className="space-y-3 rounded-xl bg-white p-4 md:p-5">
+                {byline && (
+                  <p className="mb-0 text-sm text-neutral-600">
+                    {byline.label}:{' '}
+                    <span className="font-medium text-brand-primary">{byline.value}</span>
+                  </p>
+                )}
+                <h1 className="mb-0 text-xl leading-snug font-semibold md:text-2xl">
+                  {product.name}
+                </h1>
+                {(hasRating || product.soldCount > 0) && (
+                  <p className="mb-0 flex flex-wrap items-center gap-x-2 text-sm text-neutral-600">
+                    {hasRating && (
+                      <>
+                        <span className="font-semibold text-neutral-900">
+                          {product.ratingAverage?.toLocaleString('vi-VN')}
+                        </span>
+                        <StarRating value={product.ratingAverage as number} />
+                        <span>({product.reviewCount.toLocaleString('vi-VN')})</span>
+                      </>
+                    )}
+                    {hasRating && product.soldCount > 0 && (
+                      <span className="h-4 w-px bg-neutral-300" aria-hidden="true" />
+                    )}
+                    {product.soldCount > 0 && <span>Đã bán {formatSold(product.soldCount)}</span>}
+                  </p>
+                )}
+                <PriceAndVariants productName={product.name} />
+              </section>
 
-            {product.price !== null ? (
-              <>
-                <p className="mb-1 text-sm text-neutral-500">Giá tham khảo</p>
-                <p className="mb-6 text-3xl font-bold text-brand-primary">
-                  {formatPrice(product.price)}
-                </p>
-              </>
-            ) : (
-              <p className="mb-6 text-2xl font-bold text-brand-primary">Liên hệ để nhận báo giá</p>
-            )}
+              {product.specifications.length > 0 && (
+                <section className="rounded-xl bg-white p-4 md:p-5">
+                  <h2 className="mb-3 text-lg font-bold">Thông tin chi tiết</h2>
+                  <dl className="m-0 divide-y divide-neutral-200 text-sm">
+                    {product.specifications.map((spec) => (
+                      <div
+                        key={spec.name}
+                        className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 py-2"
+                      >
+                        <dt className="text-neutral-500">{spec.name}</dt>
+                        <dd className="m-0 break-words text-neutral-900">
+                          {formatSpecValue(spec.value)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              )}
 
-            {product.description && (
-              <p className="mb-6 text-neutral-700 md:text-lg">{product.description}</p>
-            )}
-
-            <div className="mb-6 flex flex-wrap gap-3">
-              <a
-                href={`tel:${siteConfig.phone}`}
-                className="btn btn-primary flex items-center gap-2 rounded-full px-6 py-2.5 font-semibold"
-              >
-                <PhoneCallIcon className="size-5" />
-                Gọi {siteConfig.phone}
-              </a>
-              <Link
-                href="/contact"
-                className="btn btn-outline-primary rounded-full px-6 py-2.5 font-semibold"
-              >
-                Nhận báo giá
-              </Link>
-              {siteConfig.socials.zalo && (
-                <a
-                  href={siteConfig.socials.zalo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-outline-secondary rounded-full px-6 py-2.5 font-semibold"
-                >
-                  Chat Zalo
-                </a>
+              {product.description && (
+                <section className="rounded-xl bg-white p-4 md:p-5">
+                  <h2 className="mb-3 text-lg font-bold">Mô tả sản phẩm</h2>
+                  <ExpandableText text={product.description} />
+                </section>
               )}
             </div>
 
-            <ul className="m-0 list-none space-y-2 rounded-2xl bg-neutral-50 p-[1rem] text-sm text-neutral-700 sm:p-5">
-              <li>• Giá có thể thay đổi theo số lượng, quy cách và thời điểm đặt hàng.</li>
-              <li>• Vận chuyển toàn quốc, liên hệ để được báo phí giao hàng.</li>
-              <li>• Giờ làm việc: {siteConfig.hours}.</li>
-            </ul>
+            <aside className="rounded-xl bg-white p-4 md:col-span-2 lg:sticky lg:top-24 lg:col-span-1">
+              <BuyBox />
+              <p className="mt-4 mb-0 border-t border-neutral-200 pt-3 text-xs text-neutral-500">
+                Cần tư vấn?{' '}
+                <a href={`tel:${siteConfig.phone}`} className="font-semibold text-brand-primary">
+                  {siteConfig.phone}
+                </a>{' '}
+                ({siteConfig.hours})
+              </p>
+            </aside>
           </div>
-        </div>
-      </section>
+        </PurchaseProvider>
 
-      {related.length > 0 && (
-        <section className="border-t border-neutral-200 bg-neutral-50 py-12 md:py-16">
-          <div className="container">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-              <h2 className="mb-0 text-xl font-bold tracking-wide uppercase md:text-2xl">
-                Sản phẩm cùng nhóm
-              </h2>
+        {related.length > 0 && (
+          <section className="rounded-xl bg-white p-4 md:p-5">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+              <h2 className="mb-0 text-lg font-bold">Sản phẩm tương tự</h2>
               <Link
-                href={categoryHref}
-                className="text-sm font-semibold no-underline hover:underline"
+                href={categoryHref(relatedCategory.slug)}
+                className="text-sm font-semibold text-brand-primary no-underline hover:underline"
               >
-                Xem tất cả {category.name}
+                Xem tất cả {relatedCategory.name}
               </Link>
             </div>
-            <ul className="mb-0 grid grid-cols-2 gap-3 list-none p-0 sm:gap-4 lg:grid-cols-4">
+            <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:gap-3 md:grid-cols-4">
               {related.map((item) => (
                 <li key={item.id}>
-                  <ProductCard product={item} categoryName={category.name} />
+                  <ProductCard product={item} />
                 </li>
               ))}
             </ul>
-          </div>
-        </section>
-      )}
-
-      <div className="pt-12 md:pt-16">
-        <ContactCta
-          title="Cần báo giá sản phẩm này?"
-          description="Gửi số lượng và quy cách, chúng tôi báo giá và tư vấn phương án giao hàng."
-        />
+          </section>
+        )}
       </div>
-    </>
+    </div>
   )
 }

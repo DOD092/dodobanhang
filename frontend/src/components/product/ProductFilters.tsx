@@ -6,13 +6,13 @@ import {
   hasActiveFilters,
   priceRanges,
   type ProductQuery,
+  RATING_FILTER,
 } from '@/features/product/productQuery'
-import type { Category } from '@/types/Category'
+
+import StarRating from './StarRating'
 
 interface ProductFiltersProps {
   query: ProductQuery
-  categories: Category[]
-  totalCount: number
   // Không có sản phẩm nào niêm yết giá (toàn "Liên hệ") thì ẩn nhóm "Khoảng giá", vì lọc theo giá
   // lúc đó không có tác dụng gì (xem hasPricedProducts() trong productAPI.ts).
   showPriceFilter: boolean
@@ -54,40 +54,22 @@ function FilterLink({
   )
 }
 
-function Count({ value }: { value: number }) {
-  return <span className="ms-auto text-xs text-neutral-400">{value}</span>
-}
-
 /*
-  Bộ lọc: nhóm sản phẩm + khoảng giá, mỗi lựa chọn là một <Link> (Server Component, không cần JS).
+  Bộ lọc: khoảng giá + đánh giá, mỗi lựa chọn là một <Link> (Server Component, không cần JS).
+  Danh mục nằm ở CategorySidebar (cột trái) từ 23/11/2026.
   Chỉ trả về NỘI DUNG; khung ẩn/hiện (drawer mobile, sidebar desktop) do FiltersDrawer đảm nhiệm.
 */
-export default function ProductFilters({
-  query,
-  categories,
-  totalCount,
-  showPriceFilter,
-}: ProductFiltersProps) {
+export default function ProductFilters({ query, showPriceFilter }: ProductFiltersProps) {
   return (
     <>
-      <FilterGroup title="Nhóm sản phẩm">
+      <FilterGroup title="Đánh giá">
         <FilterLink
-          href={buildProductsHref(query, { category: null })}
-          active={query.category === null}
+          href={buildProductsHref(query, { rating: !query.rating })}
+          active={query.rating}
         >
-          Tất cả sản phẩm
-          <Count value={totalCount} />
+          <StarRating value={RATING_FILTER} />
+          từ {RATING_FILTER} sao
         </FilterLink>
-        {categories.map((category) => (
-          <FilterLink
-            key={category.id}
-            href={buildProductsHref(query, { category: category.slug })}
-            active={query.category === category.slug}
-          >
-            {category.name}
-            <Count value={category.productCount} />
-          </FilterLink>
-        ))}
       </FilterGroup>
 
       {showPriceFilter && (
@@ -118,7 +100,7 @@ export default function ProductFilters({
 
       {hasActiveFilters(query) && (
         <Link
-          href={buildProductsHref(query, { q: '', category: null, price: null })}
+          href={buildProductsHref(query, { q: '', category: null, price: null, rating: false })}
           scroll={false}
           className="btn btn-outline-primary rounded-full py-2 text-sm font-semibold"
         >

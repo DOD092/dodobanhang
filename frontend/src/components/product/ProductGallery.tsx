@@ -22,7 +22,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
 
   return (
     <div>
-      <div className="group relative aspect-4/3 overflow-hidden rounded-3xl border-2 border-b-4 border-neutral-300 bg-neutral-100 shadow-md">
+      <div className="group relative aspect-square overflow-hidden rounded-xl border border-neutral-200 bg-white">
         {/* Ảnh chính nằm ngay màn hình đầu: preload để hiện nhanh (LCP) */}
         <Image
           src={images[active]}

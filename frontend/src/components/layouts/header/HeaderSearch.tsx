@@ -42,7 +42,7 @@ export default function HeaderSearch({ open, onClose }: HeaderSearchProps) {
             required
             maxLength={100}
             autoComplete="off"
-            placeholder="Bạn cần tìm sản phẩm gì? (vd: thép hộp, inox 304)"
+            placeholder="Bạn cần tìm sản phẩm gì?"
             onKeyDown={(event) => event.key === 'Escape' && onClose()}
             className="form-input h-11 rounded-full ps-12 pe-24"
           />

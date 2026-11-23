@@ -279,6 +279,22 @@ Lưu ý:
 - Backend chỉ trả sản phẩm/nhóm có `status = 'ACTIVE'`. Muốn ẩn sản phẩm khỏi web thì đổi status trong DB.
 - Đã kiểm tra (17/11/2026) với backend + Postgres tạm: trang chủ, `/products` (lọc nhóm, khoảng giá, tìm không dấu, sắp xếp, trang vượt quá, slug nhóm lạ), chi tiết sản phẩm (gallery 3 ảnh, giá/"Liên hệ", cùng nhóm), slug sai → 404, `/services/*` vẫn chạy, `next/image` tối ưu ảnh, CORS form liên hệ từ `:3001`.
 
+## Trang sản phẩm kiểu sàn TMĐT (23/11/2026)
+
+Bố cục theo mẫu sàn TMĐT (chủ dự án gửi ảnh), màu vẫn theo thương hiệu dodo. Dữ liệu mẫu từ crawl Tiki (backend `SEED_TIKI`, backend.md 7.7-7.8). Thay cho giao diện cũ (banner ảnh + thẻ có mô tả + nút "Liên hệ"); các mô tả `/products` ở mục Routing/Layout phía trên là lịch sử.
+
+| Trang | Bố cục |
+|---|---|
+| `/products` | Nền xám `neutral-100`, các khung trắng bo `rounded-xl`. Trái (>= lg; mobile = drawer "Bộ lọc"): `CategorySidebar` (cây danh mục, `<details>` không cần JS, nhánh đang xem mở sẵn) + `ProductFilters` (Đánh giá "từ 4 sao", Khoảng giá). Phải: tiêu đề nhóm → `CategoryTiles` (ô ảnh nhóm con; nhóm lá thì hiện nhóm cùng cấp; chưa chọn nhóm thì nhóm gốc) → khung "Tất cả sản phẩm" (sắp xếp, tìm kiếm, chip bộ lọc, lưới 2/3/4 cột, 24 sp/trang) |
+| `/products/[slug]` | >= lg 3 cột `[400px][1fr][300px]`: ảnh vuông + dải ảnh nhỏ (dính) / tác giả hoặc thương hiệu, tên, sao (số đánh giá) \| đã bán, giá đỏ + -% + giá gốc gạch ngang, nút chọn "Phân loại" (biến thể) / khung mua dính: số lượng (1-99), tạm tính, "Mua ngay", "Thêm vào giỏ". Dưới: "Thông tin chi tiết" (bảng thông số; ngày `YYYY-MM-DD 00:00:00` → `DD/MM/YYYY`), "Mô tả sản phẩm" (`ExpandableText`, thu gọn + "Xem thêm", giữ xuống dòng), "Sản phẩm tương tự" (cùng nhóm, ít quá thì lấy nhóm cha). Breadcrumb theo `categoryPath` |
+
+- **Thẻ sản phẩm** (`ProductCard`): ảnh vuông, nhãn -%, giá đỏ (`red-600`) + giá gốc, tác giả/thương hiệu chữ hoa xám ("Chưa phân loại" thì ẩn), tên 2 dòng, `StarRating` + "Đã bán 29,2k" (`formatSold`). Cả thẻ là 1 link. Giá null = "Liên hệ".
+- **Biến thể + số lượng**: `components/product/purchase/` - `PurchaseProvider` (context, mặc định biến thể rẻ nhất), `PriceAndVariants` (cột giữa), `BuyBox` (cột phải). 2 khối ở 2 cột grid nên dùng chung context.
+- **"Mua ngay" / "Thêm vào giỏ" chưa đặt hàng được**: backend chưa có giỏ hàng/đặt hàng cho khách (API cart/order là CRUD thô chưa phân quyền) → bấm chỉ hiện "Đặt hàng online đang được hoàn thiện" + link `/contact`.
+- **Danh mục**: `types/Category.ts` thêm `parentId`, `imageUrl`, `CategoryNode`; `utils/categoryTree.ts` (`buildCategoryTree`, `findCategoryPath`). `productCount` từ backend đã gộp nhóm con. Trang chủ chỉ hiện nhóm gốc có sản phẩm.
+- **Query**: thêm `rating` (`?rating=4` → `minRating`), sort `popular` ("Bán chạy", **mặc định**), `PRODUCTS_PAGE_SIZE` = 24. Tìm kiếm khớp cả tác giả.
+- Đã xem thật (backend + DB tạm có 131 sản phẩm): `/products?category=sach-tieng-viet` desktop 1440 và mobile 500, trang chi tiết sách.
+
 ## Đăng ký / đăng nhập (18/11/2026)
 
 Nối với `POST /api/auth/register`, `/verify-email`, `/resend-verification-code`, `/login` và `GET /api/auth/me` của backend (`../backend/backend.md` mục 7.6).

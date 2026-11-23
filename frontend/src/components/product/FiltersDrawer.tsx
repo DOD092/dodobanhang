@@ -73,7 +73,7 @@ export function Panel({ children }: { children: ReactNode }) {
         role="dialog"
         aria-modal="true"
         aria-label="Bộ lọc sản phẩm"
-        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] overflow-y-auto bg-white transition-transform duration-300 ease-out lg:sticky lg:top-24 lg:z-auto lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-visible lg:bg-transparent lg:transition-none ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] overflow-y-auto bg-white transition-transform duration-300 ease-out lg:sticky lg:top-24 lg:z-auto lg:max-h-[calc(100vh-7rem)] lg:w-auto lg:max-w-none lg:translate-x-0 lg:overflow-y-auto lg:rounded-xl lg:bg-white lg:transition-none ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -89,9 +89,9 @@ export function Panel({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <div className="flex w-full flex-col gap-y-8 p-4 lg:rounded-2xl lg:border-2 lg:border-b-4 lg:border-neutral-300 lg:bg-white lg:p-5 lg:shadow-md">
-          {children}
-        </div>
+        {/* Desktop: khung trắng bo góc cùng kiểu các khung khác của trang /products; cột dài hơn màn
+            hình thì tự cuộn (max-h + overflow-y-auto ở aside) */}
+        <div className="flex w-full flex-col gap-y-8 p-4">{children}</div>
       </aside>
     </>
   )

@@ -14,6 +14,13 @@ export interface Product {
   // URL ảnh, ảnh chính trước. '/images/...' là ảnh tĩnh của frontend, '/uploads/...' là ảnh
   // backend lưu (đi qua utils/imageUrl.ts). Có thể rỗng nếu sản phẩm chưa có ảnh.
   images: string[]
+  compareAtPrice: number | null // giá gốc (gạch ngang) của biến thể rẻ nhất; null = không giảm giá
+  discountPercent: number // 0 = không giảm
+  author: string | null // tác giả (sách) - hiện trên thẻ thay cho thương hiệu
+  brandName: string
+  ratingAverage: number | null // 0-5; null = chưa có đánh giá
+  reviewCount: number
+  soldCount: number
 }
 
 export interface ProductVariant {
@@ -21,8 +28,16 @@ export interface ProductVariant {
   sku: string
   variantName: string
   price: number | null
+  compareAtPrice: number | null
+}
+
+export interface ProductSpecification {
+  name: string
+  value: string
 }
 
 export interface ProductDetail extends Product {
   variants: ProductVariant[]
+  specifications: ProductSpecification[] // bảng "Thông tin chi tiết"
+  categoryPath: CategoryRef[] // từ nhóm gốc tới nhóm của sản phẩm (breadcrumb)
 }

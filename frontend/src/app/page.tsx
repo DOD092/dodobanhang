@@ -55,11 +55,14 @@ export default async function HomePage() {
         />
         {/* Nhóm sản phẩm (Category); danh sách sản phẩm cụ thể ở trang /products */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-          {categories.map((category) => (
-            <div key={category.id}>
-              <CategoryCard category={category} />
-            </div>
-          ))}
+          {/* Chỉ nhóm gốc có sản phẩm; nhóm con xem ở /products (cột "Khám phá theo danh mục") */}
+          {categories
+            .filter((category) => !category.parentId && category.productCount > 0)
+            .map((category) => (
+              <div key={category.id}>
+                <CategoryCard category={category} />
+              </div>
+            ))}
         </div>
         <MoreButton href="/products" label="Xem tất cả sản phẩm" />
       </section>

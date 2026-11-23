@@ -86,7 +86,7 @@ export default function ProductSearch({ query }: { query: ProductQuery }) {
             navigate('')
           }
         }}
-        placeholder="Tìm theo tên, mã sản phẩm... (vd: thép hộp, inox 304)"
+        placeholder="Tìm theo tên sản phẩm, tác giả, mã SKU..."
         autoComplete="off"
         maxLength={100}
         className="form-input h-12 rounded-full ps-12 pe-24 shadow-sm [&::-webkit-search-cancel-button]:hidden"

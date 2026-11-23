@@ -12,7 +12,7 @@ import Pagination from './Pagination'
 import ProductCard from './ProductCard'
 
 // Số thẻ tải ảnh ngay (hàng đầu ở desktop); thẻ còn lại lazy load khi cuộn tới
-const EAGER_COUNT = 3
+const EAGER_COUNT = 4
 
 interface ProductGridProps {
   query: ProductQuery
@@ -35,7 +35,7 @@ export default async function ProductGrid({ query }: ProductGridProps) {
         <div className="flex flex-wrap justify-center gap-3">
           {hasActiveFilters(query) && (
             <Link
-              href={buildProductsHref(query, { q: '', category: null, price: null })}
+              href={buildProductsHref(query, { q: '', category: null, price: null, rating: false })}
               scroll={false}
               className="btn btn-outline-primary rounded-full px-6 py-2 font-semibold"
             >
@@ -63,14 +63,10 @@ export default async function ProductGrid({ query }: ProductGridProps) {
         trong <strong className="text-neutral-900">{total}</strong> sản phẩm
       </p>
 
-      <ul className="mb-0 grid grid-cols-2 gap-3 list-none p-0 sm:gap-4 md:grid-cols-3">
+      <ul className="mb-0 grid list-none grid-cols-2 gap-2 p-0 sm:gap-3 md:grid-cols-3 xl:grid-cols-4">
         {items.map((product, index) => (
           <li key={product.id}>
-            <ProductCard
-              product={product}
-              categoryName={product.category.name}
-              eager={index < EAGER_COUNT}
-            />
+            <ProductCard product={product} eager={index < EAGER_COUNT} />
           </li>
         ))}
       </ul>

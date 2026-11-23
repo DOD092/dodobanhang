@@ -1,11 +1,13 @@
-// Bộ lọc trang /products lưu trên URL (?q=&category=&price=&sort=&page=) để chia sẻ link,
+// Bộ lọc trang /products lưu trên URL (?q=&category=&price=&rating=&sort=&page=) để chia sẻ link,
 // bấm Back/Forward vẫn giữ bộ lọc, và Server Component đọc được qua `searchParams`.
 // File thuần (không dùng API server/client) nên dùng được ở cả hai phía.
 
 export const PRODUCTS_PATH = '/products'
-export const PRODUCTS_PAGE_SIZE = 9
+// 24 chia hết cho 2/3/4 cột -> hàng cuối luôn đủ ở mọi màn hình
+export const PRODUCTS_PAGE_SIZE = 24
 
 export const sortOptions = [
+  { value: 'popular', label: 'Bán chạy' },
   { value: 'newest', label: 'Mới nhất' },
   { value: 'price-asc', label: 'Giá thấp đến cao' },
   { value: 'price-desc', label: 'Giá cao đến thấp' },
@@ -24,10 +26,14 @@ export const priceRanges = [
 
 export type PriceRangeValue = (typeof priceRanges)[number]['value']
 
+// Lọc theo sao: chỉ 1 mức "từ 4 sao" như chip trên các sàn TMĐT
+export const RATING_FILTER = 4
+
 export interface ProductQuery {
   q: string
   category: string | null // slug của nhóm (vd 'den-led-chieu-sang')
   price: PriceRangeValue | null
+  rating: boolean // true = chỉ sản phẩm từ RATING_FILTER sao
   sort: SortValue
   page: number
 }
@@ -36,7 +42,8 @@ export const defaultProductQuery: ProductQuery = {
   q: '',
   category: null,
   price: null,
-  sort: 'newest',
+  rating: false,
+  sort: 'popular',
   page: 1,
 }
 
@@ -65,6 +72,7 @@ export function parseProductQuery(searchParams: RawSearchParams): ProductQuery {
     q: first(searchParams.q).slice(0, 100),
     category: slugValue(first(searchParams.category)),
     price: priceRanges.find((range) => range.value === price)?.value ?? null,
+    rating: first(searchParams.rating) === String(RATING_FILTER),
     sort: sortOptions.find((option) => option.value === sort)?.value ?? defaultProductQuery.sort,
     page: positiveInt(first(searchParams.page)) ?? 1,
   }
@@ -79,6 +87,7 @@ export function buildProductsHref(query: ProductQuery, changes: Partial<ProductQ
   if (next.q) params.set('q', next.q)
   if (next.category !== null) params.set('category', next.category)
   if (next.price) params.set('price', next.price)
+  if (next.rating) params.set('rating', String(RATING_FILTER))
   if (next.sort !== defaultProductQuery.sort) params.set('sort', next.sort)
   if (next.page > 1) params.set('page', String(next.page))
 
@@ -87,5 +96,5 @@ export function buildProductsHref(query: ProductQuery, changes: Partial<ProductQ
 }
 
 export function hasActiveFilters(query: ProductQuery) {
-  return Boolean(query.q || query.category !== null || query.price)
+  return Boolean(query.q || query.category !== null || query.price || query.rating)
 }

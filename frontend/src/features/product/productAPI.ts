@@ -1,7 +1,7 @@
 import { serverGet, serverGetOrUndefined } from '@/apis/server'
 import type { Product, ProductDetail } from '@/types/Product'
 
-import { PRODUCTS_PAGE_SIZE, priceRanges, type ProductQuery } from './productQuery'
+import { PRODUCTS_PAGE_SIZE, priceRanges, type ProductQuery, RATING_FILTER } from './productQuery'
 
 export interface ProductPage {
   items: Product[]
@@ -25,6 +25,7 @@ export async function searchProducts(
     category: query.category,
     minPrice: range && 'min' in range ? range.min : undefined,
     maxPrice: range && 'max' in range ? range.max : undefined,
+    minRating: query.rating ? RATING_FILTER : undefined,
     sort: query.sort,
     page: query.page,
     limit: pageSize,
@@ -43,6 +44,7 @@ export async function getProductsByCategory(
 ): Promise<Product[]> {
   const result = await serverGet<ProductPage>('/products/search', {
     category: categorySlug,
+    sort: 'popular',
     limit,
   })
   return result.items
