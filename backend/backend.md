@@ -560,3 +560,32 @@ Chi tiết phía web: `../frontend/frontend.md` mục "Đăng ký / đăng nhậ
   (`uploads/avatars/9419fc8d-....jpg`): nên thêm `/uploads` vào `.gitignore` + `git rm --cached`.
 - Mail chưa cấu hình (`MAIL_*`) thì đăng ký vẫn thành công nhưng không có mail; lấy mã ở cột
   `users.verification_code` để test.
+
+### 7.7. Sản phẩm giả lập từ Tiki — `SEED_TIKI=true` (23/11/2026)
+
+Nạp dữ liệu crawl (`tiki_crawler/`, xem `tiki_crawler/README.md`) để web có nhiều sản phẩm khi test.
+`src/database/tiki-seed/tiki.seeder.ts`, chạy sau `CatalogSeeder` (cần 5 nhóm có sẵn).
+
+```bash
+# ở gốc repo: crawl (output vào data/, đã gitignore)
+python -m tiki_crawler search "đèn led" --pages 2 --details
+python -m tiki_crawler search "pin năng lượng mặt trời" --pages 2 --details
+# backend/.env (DB TEST / local): SEED_CATALOG=true SEED_TIKI=true -> boot 1 lần -> tắt lại
+```
+
+| Crawl (`data/products.jsonl`) | DB |
+| --- | --- |
+| `name` (cắt 200) | `products.name`; `slug` = `toSlug(name)-tiki-<id>` (unique, idempotent) |
+| `short_description`, `description` (đã giữ xuống dòng) | `products.*` |
+| `brand_name` | `brands` (tìm theo slug, chưa có thì tạo; trống → "Chưa phân loại") |
+| `category_path` + `name` | 1 trong 5 nhóm theo từ khoá (`CATEGORY_RULES`), không khớp → bỏ qua. `TIKI_CATEGORY_SLUG` ép 1 nhóm |
+| `variants[]` (hoặc `sku`/`price` nếu không có biến thể) | `product_variants` (`variant_name` = tên + lựa chọn, `compare_at_price` = giá gốc nếu > giá bán; SKU đã có → bỏ) |
+| `images[]` + ảnh riêng biến thể | `product_images` (URL tuyệt đối `salt.tikicdn.com`, ảnh đầu là ảnh chính) |
+
+- Env: `TIKI_DATA_FILE` (mặc định `../data/products.jsonl` tính từ `backend/`), `TIKI_SEED_LIMIT`.
+- **Không nạp review**: bảng `reviews` bắt buộc `user_id` + `order_item_id` (unique) → cần user/đơn giả.
+- ⚠️ **Chỉ dùng ở DB test/local, không bật trên Aiven**: mô tả/ảnh thuộc bản quyền người bán Tiki, và
+  dữ liệu giả sẽ hiện cho cả nhóm. Xoá: `DELETE FROM products WHERE slug LIKE '%-tiki-%'` (variant/ảnh
+  xoá theo CASCADE).
+- Đã test (Postgres tạm): 78 sản phẩm (2 lần crawl) → +78 product, +86 variant, +13 brand, đủ 5 nhóm;
+  chạy lần 2 bỏ qua cả 78; `GET /api/products/search` trả ảnh Tiki.
