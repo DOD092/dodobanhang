@@ -1,6 +1,7 @@
 """Data model + hàm parse từ JSON thô của Tiki. Parse 'phòng thủ' — thiếu field thì để None."""
 from __future__ import annotations
 
+import html as html_lib
 import json
 import re
 from dataclasses import asdict, dataclass, field
@@ -8,12 +9,64 @@ from datetime import datetime, timezone
 from typing import Any
 
 _TAG_RE = re.compile(r"<[^>]+>")
+# Thẻ kết thúc 1 khối -> xuống dòng (giữ đoạn văn / gạch đầu dòng khi bỏ HTML)
+_BLOCK_END_RE = re.compile(r"<\s*(br\s*/?|/p|/div|/li|/h[1-6]|/tr)\s*>", re.IGNORECASE)
+_LI_START_RE = re.compile(r"<\s*li[^>]*>", re.IGNORECASE)
 
 
 def _strip_html(html: str | None) -> str | None:
+    """HTML -> 1 dòng (dùng cho giá trị ngắn như thông số kỹ thuật)."""
     if not html:
         return None
-    return re.sub(r"\s+", " ", _TAG_RE.sub(" ", html)).strip()
+    return re.sub(r"\s+", " ", html_lib.unescape(_TAG_RE.sub(" ", html))).strip()
+
+
+def _html_to_text(html: str | None) -> str | None:
+    """HTML -> text nhiều dòng: giữ xuống dòng giữa các đoạn, <li> thành '- ', bỏ dòng trống thừa."""
+    if not html:
+        return None
+    text = _LI_START_RE.sub("- ", _BLOCK_END_RE.sub("\n", html))
+    text = html_lib.unescape(_TAG_RE.sub(" ", text))
+    lines = [re.sub(r"[ \t\xa0]+", " ", line).strip() for line in text.splitlines()]
+    text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+    return text or None
+
+
+def _leaf_category(d: dict) -> tuple[int | None, str | None, list[dict]]:
+    """Danh mục lá + đường dẫn danh mục. `categories` của API chi tiết chỉ là danh mục GỐC
+    (vd 'Nhà Cửa - Đời Sống'); danh mục lá nằm cuối `breadcrumbs` (phần tử cuối là chính sản
+    phẩm, category_id = 0 -> bỏ)."""
+    path = [
+        {"id": b["category_id"], "name": b.get("name")}
+        for b in d.get("breadcrumbs") or []
+        if isinstance(b.get("category_id"), int) and b["category_id"] > 0
+    ]
+    if path:
+        return path[-1]["id"], path[-1]["name"], path
+    cat = d.get("categories") or {}
+    return cat.get("id"), cat.get("name"), ([{"id": cat["id"], "name": cat.get("name")}] if cat.get("id") else [])
+
+
+def _variants(d: dict) -> list[dict]:
+    """Biến thể (configurable_products): sku, nhãn lựa chọn ('Kích cỡ: Combo 5 đèn'), giá, ảnh.
+    Sản phẩm không có biến thể -> [] (bên import tự tạo 1 biến thể từ sku/giá của sản phẩm)."""
+    option_names = [o.get("name") for o in d.get("configurable_options") or []]
+    out = []
+    for c in d.get("configurable_products") or []:
+        labels = []
+        for i, name in enumerate(option_names, start=1):
+            value = (c.get(f"option{i}") or "").strip()
+            if value:
+                labels.append(f"{name}: {value}" if name else value)
+        out.append({
+            "sku": c.get("sku"),
+            "option": ", ".join(labels) or None,
+            "price": c.get("price"),
+            "original_price": c.get("original_price"),
+            "inventory_status": c.get("inventory_status"),
+            "image": next((i.get("large_url") for i in c.get("images") or [] if i.get("large_url")), None),
+        })
+    return out
 
 
 def _sold(d: dict) -> int | None:
@@ -115,19 +168,21 @@ class Product(Record):
     seller_name: str | None = None
     spid: int | None = None
     category_id: int | None = None
-    category_name: str | None = None
+    category_name: str | None = None          # danh mục LÁ (từ breadcrumbs), không phải danh mục gốc
+    category_path: list[dict] = field(default_factory=list)  # [{id, name}] từ gốc tới lá
     breadcrumbs: list[str] = field(default_factory=list)
     short_description: str | None = None
     description: str | None = None
     specifications: dict[str, str] = field(default_factory=dict)
     images: list[str] = field(default_factory=list)
+    variants: list[dict] = field(default_factory=list)  # xem _variants(); [] = sản phẩm 1 biến thể
     crawled_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
     @classmethod
     def from_api(cls, d: dict) -> "Product":
         brand = d.get("brand") or {}
         seller = d.get("current_seller") or {}
-        cat = d.get("categories") or {}
+        category_id, category_name, category_path = _leaf_category(d)
         specs: dict[str, str] = {}
         for group in d.get("specifications") or []:
             for attr in group.get("attributes") or []:
@@ -143,12 +198,13 @@ class Product(Record):
             brand_id=brand.get("id"), brand_name=brand.get("name"),
             seller_id=seller.get("id"), seller_name=seller.get("name"),
             spid=seller.get("product_id"),
-            category_id=cat.get("id"), category_name=cat.get("name"),
+            category_id=category_id, category_name=category_name, category_path=category_path,
             breadcrumbs=[b.get("name") for b in d.get("breadcrumbs") or [] if b.get("name")],
-            short_description=d.get("short_description"),
-            description=_strip_html(d.get("description")),
+            short_description=_strip_html(d.get("short_description")),
+            description=_html_to_text(d.get("description")),
             specifications=specs,
             images=[i.get("base_url") for i in d.get("images") or [] if i.get("base_url")],
+            variants=_variants(d),
         )
 
 

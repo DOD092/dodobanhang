@@ -70,6 +70,18 @@ with TikiCrawler(Settings(storage="sqlite", workers=4)) as c:
 Biến môi trường: `TIKI_TIMEOUT`, `TIKI_MAX_RETRIES`, `TIKI_MIN_INTERVAL`, `TIKI_WORKERS`,
 `TIKI_MAX_PAGES`, `TIKI_STORAGE`, `TIKI_OUTPUT_DIR`, `TIKI_PROXIES` (phân tách bằng dấu phẩy).
 
+## Dữ liệu `products` (dùng để nạp vào DB của web, xem `backend/backend.md` mục 7.7)
+
+| Field | Ghi chú |
+|---|---|
+| `category_id`, `category_name` | Danh mục **lá** lấy từ `breadcrumbs` (trường `categories` của API chi tiết chỉ là danh mục gốc, không nhất quán) |
+| `category_path` | `[{id, name}]` từ gốc tới lá |
+| `description` | HTML → text **giữ xuống dòng** (`<p>`, `<br>`, `<li>` → dòng mới / `- `), đã unescape `&amp;`... |
+| `variants` | Biến thể từ `configurable_products`: `sku`, `option` (vd `Màu sắc: Đen, Kích cỡ: M`), `price`, `original_price`, `image`. `[]` = sản phẩm 1 biến thể (dùng `sku`/`price` của sản phẩm) |
+| `images` | URL tuyệt đối `salt.tikicdn.com` |
+
+⚠️ Mô tả và ảnh thuộc bản quyền người bán trên Tiki: chỉ dùng làm dữ liệu giả để test ở máy local.
+
 ## Mở rộng
 
 - **Thêm trường dữ liệu**: thêm field vào dataclass trong `models.py` và map trong `from_api`.
