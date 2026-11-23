@@ -164,6 +164,7 @@ class Product(Record):
     inventory_status: str | None = None
     brand_id: int | None = None
     brand_name: str | None = None
+    authors: list[str] = field(default_factory=list)  # sách: tác giả (hiện trên thẻ sản phẩm)
     seller_id: int | None = None
     seller_name: str | None = None
     spid: int | None = None
@@ -196,6 +197,7 @@ class Product(Record):
             rating_average=d.get("rating_average"), review_count=d.get("review_count"),
             quantity_sold=_sold(d), inventory_status=d.get("inventory_status"),
             brand_id=brand.get("id"), brand_name=brand.get("name"),
+            authors=[a["name"].strip() for a in d.get("authors") or [] if a.get("name")],
             seller_id=seller.get("id"), seller_name=seller.get("name"),
             spid=seller.get("product_id"),
             category_id=category_id, category_name=category_name, category_path=category_path,

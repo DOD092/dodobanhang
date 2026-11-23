@@ -79,6 +79,8 @@ Biến môi trường: `TIKI_TIMEOUT`, `TIKI_MAX_RETRIES`, `TIKI_MIN_INTERVAL`, 
 | `description` | HTML → text **giữ xuống dòng** (`<p>`, `<br>`, `<li>` → dòng mới / `- `), đã unescape `&amp;`... |
 | `variants` | Biến thể từ `configurable_products`: `sku`, `option` (vd `Màu sắc: Đen, Kích cỡ: M`), `price`, `original_price`, `image`. `[]` = sản phẩm 1 biến thể (dùng `sku`/`price` của sản phẩm) |
 | `images` | URL tuyệt đối `salt.tikicdn.com` |
+| `authors` | Tác giả (sách), hiện trên thẻ sản phẩm thay cho thương hiệu |
+| `rating_average`, `review_count`, `quantity_sold`, `list_price`, `specifications` | Sao, số đánh giá, đã bán, giá niêm yết (giá gốc gạch ngang), bảng "Thông tin chi tiết" |
 
 ⚠️ Mô tả và ảnh thuộc bản quyền người bán trên Tiki: chỉ dùng làm dữ liệu giả để test ở máy local.
 
