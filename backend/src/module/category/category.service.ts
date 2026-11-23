@@ -37,7 +37,33 @@ export class CategoryService implements ICategoryService {
     return this.categoryRepository.remove(id);
   }
 
-  findPublicWithProductCount(): Promise<CategoryWithCount[]> {
-    return this.categoryRepository.findPublicWithProductCount();
+  // productCount = sản phẩm của chính nhóm + mọi nhóm con (khớp với bộ lọc /products/search,
+  // vốn lọc theo cả cây con). Cộng dồn trong bộ nhớ: số category nhỏ.
+  async findPublicWithProductCount(): Promise<CategoryWithCount[]> {
+    const categories =
+      await this.categoryRepository.findPublicWithProductCount();
+    const children = new Map<string, CategoryWithCount[]>();
+    for (const category of categories) {
+      if (!category.parentId) continue;
+      children.set(category.parentId, [
+        ...(children.get(category.parentId) ?? []),
+        category,
+      ]);
+    }
+    const total = (
+      category: CategoryWithCount,
+      seen = new Set<string>(),
+    ): number => {
+      if (seen.has(category.id)) return 0; // phòng dữ liệu parent_id bị vòng
+      seen.add(category.id);
+      return (children.get(category.id) ?? []).reduce(
+        (sum, child) => sum + total(child, seen),
+        category.productCount,
+      );
+    };
+    return categories.map((category) => ({
+      ...category,
+      productCount: total(category),
+    }));
   }
 }

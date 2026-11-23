@@ -1,3 +1,4 @@
+import { Category } from '../../category/entities/category.entity';
 import { DeepPartial } from 'typeorm';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { ProductImage } from '../../product-image/entities/product-image.entity';
@@ -10,6 +11,8 @@ export type CatalogProductRows = {
   product: Product;
   variants: ProductVariant[];
   images: ProductImage[];
+  // Chỉ có ở findPublicBySlug: danh mục từ gốc tới nhóm của sản phẩm (breadcrumb)
+  categoryPath?: Category[];
 }[];
 
 export interface IProductRepository {

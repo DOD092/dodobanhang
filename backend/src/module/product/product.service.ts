@@ -68,7 +68,16 @@ export class ProductService implements IProductService {
         sku: variant.sku,
         variantName: variant.variantName,
         price: variant.price,
+        compareAtPrice: variant.compareAtPrice ?? null,
       })),
+      specifications: row.product.specifications ?? [],
+      categoryPath: (row.categoryPath ?? [row.product.category]).map(
+        ({ id, name, slug }) => ({
+          id,
+          name,
+          slug,
+        }),
+      ),
     };
   }
 }
@@ -78,9 +87,17 @@ function toSummary({
   variants,
   images,
 }: CatalogProductRows[number]): ProductSummaryDto {
-  const prices = variants
-    .map((variant) => variant.price)
-    .filter((price): price is number => price !== null);
+  // Giá hiển thị = biến thể rẻ nhất; giá gốc gạch ngang = compare_at_price của chính biến thể đó
+  const cheapest = variants
+    .filter((variant) => variant.price !== null)
+    .sort((a, b) => (a.price as number) - (b.price as number))[0];
+  const price = cheapest?.price ?? null;
+  const compare =
+    price !== null &&
+    cheapest?.compareAtPrice &&
+    cheapest.compareAtPrice > price
+      ? cheapest.compareAtPrice
+      : null;
 
   return {
     id: product.id,
@@ -94,7 +111,15 @@ function toSummary({
       slug: product.category.slug,
     },
     sku: variants[0]?.sku ?? null,
-    price: prices.length > 0 ? Math.min(...prices) : null,
+    price,
     images: images.map((image) => image.imageUrl),
+    compareAtPrice: compare,
+    discountPercent:
+      compare && price !== null ? Math.round((1 - price / compare) * 100) : 0,
+    author: product.author ?? null,
+    brandName: product.brand?.name ?? '',
+    ratingAverage: product.ratingAverage ?? null,
+    reviewCount: product.reviewCount ?? 0,
+    soldCount: product.soldCount ?? 0,
   };
 }

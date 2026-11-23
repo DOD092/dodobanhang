@@ -589,3 +589,22 @@ python -m tiki_crawler search "pin năng lượng mặt trời" --pages 2 --deta
   xoá theo CASCADE).
 - Đã test (Postgres tạm): 78 sản phẩm (2 lần crawl) → +78 product, +86 variant, +13 brand, đủ 5 nhóm;
   chạy lần 2 bỏ qua cả 78; `GET /api/products/search` trả ảnh Tiki.
+
+### 7.8. Giao diện kiểu sàn TMĐT: thêm dữ liệu sản phẩm + cây danh mục (23/11/2026)
+
+- **`products` thêm 5 cột** (nullable / có default): `author` varchar(200), `rating_average` numeric(2,1),
+  `review_count` int default 0, `sold_count` int default 0, `specifications` jsonb (`[{name, value}]`).
+  ⚠️ `synchronize`: boot nhánh này vào Aiven sẽ **ADD** 5 cột (an toàn, dữ liệu cũ nhận null/0). Nhánh nào
+  chưa có 5 cột này mà boot sau đó sẽ **DROP** chúng (mất dữ liệu sao/đã bán, không lỗi boot) → merge sớm
+  lên `dev`, giống mục 7.4.
+- `GET /api/products/search`: `category` lọc **cả cây con** (WITH RECURSIVE theo `parent_id`), thêm
+  `minRating`, sort `popular` (`sold_count` giảm dần). Item thêm `compareAtPrice` (giá gốc của biến thể rẻ
+  nhất), `discountPercent`, `author`, `brandName`, `ratingAverage`, `reviewCount`, `soldCount`.
+- `GET /api/products/slug/:slug`: thêm `specifications`, `categoryPath` (gốc → nhóm của sản phẩm, cho
+  breadcrumb), `variants[].compareAtPrice`.
+- `GET /api/categories/public`: trả thêm `parentId`, `imageUrl` (entity có sẵn); `productCount` **gộp cả
+  nhóm con** (khớp bộ lọc).
+- `SEED_TIKI` mặc định `TIKI_CATEGORY_MODE=tree`: dựng cây danh mục theo breadcrumbs Tiki (bỏ
+  `TIKI_CATEGORY_SKIP`=1 cấp đầu như "Nhà Sách Tiki", giữ `TIKI_CATEGORY_DEPTH`=2 cấp), ảnh nhóm = ảnh sản
+  phẩm đầu tiên; nạp tác giả, sao, đánh giá, đã bán, thông số, giá niêm yết làm giá gốc. `map` = cách cũ
+  (5 nhóm). Test: 40 sách + 78 đèn/pin → +22 category, +118 product; "Sách tiếng Việt" 39 sp (gộp 2 cấp).

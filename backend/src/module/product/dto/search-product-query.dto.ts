@@ -30,7 +30,9 @@ export class SearchProductQueryDto extends PaginationQueryDto {
   @MaxLength(100)
   q?: string;
 
-  @ApiPropertyOptional({ description: 'Slug của category' })
+  @ApiPropertyOptional({
+    description: 'Slug của category (lấy cả sản phẩm thuộc các category con)',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(150)
@@ -49,6 +51,18 @@ export class SearchProductQueryDto extends PaginationQueryDto {
   @IsNumber()
   @Min(0)
   maxPrice?: number;
+
+  @ApiPropertyOptional({
+    minimum: 0,
+    maximum: 5,
+    description: 'Điểm đánh giá >= minRating',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  minRating?: number;
 
   @ApiPropertyOptional({ enum: PRODUCT_SORTS, default: 'newest' })
   @IsOptional()

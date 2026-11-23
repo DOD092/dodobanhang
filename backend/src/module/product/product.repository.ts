@@ -8,6 +8,7 @@ import {
   UNACCENT_PARAMS,
   unaccentSql,
 } from '../../common/utils/vietnamese-search.util';
+import { Category } from '../category/entities/category.entity';
 import { ProductImage } from '../product-image/entities/product-image.entity';
 import { ProductVariant } from '../product-variant/entities/product-variant.entity';
 import { SearchProductQueryDto } from './dto/search-product-query.dto';
@@ -45,8 +46,22 @@ export class ProductRepository
     const qb = this.publicQuery();
 
     if (query.category) {
-      qb.andWhere('category.slug = :categorySlug', {
-        categorySlug: query.category,
+      // Cả cây con: lọc "Sách tiếng Việt" ra luôn sản phẩm của "Sách văn học", "Truyện tranh"...
+      qb.andWhere(
+        `product.category_id IN (
+          WITH RECURSIVE tree AS (
+            SELECT c.id FROM categories c WHERE c.slug = :categorySlug
+            UNION ALL
+            SELECT child.id FROM categories child JOIN tree ON child.parent_id = tree.id
+          )
+          SELECT id FROM tree
+        )`,
+        { categorySlug: query.category },
+      );
+    }
+    if (query.minRating !== undefined) {
+      qb.andWhere('product.ratingAverage >= :minRating', {
+        minRating: query.minRating,
       });
     }
     if (query.minPrice !== undefined) {
@@ -77,6 +92,9 @@ export class ProductRepository
         break;
       case 'price-desc':
         qb.orderBy(MIN_PRICE_SQL, 'DESC', 'NULLS LAST');
+        break;
+      case 'popular':
+        qb.orderBy('product.soldCount', 'DESC');
         break;
       case 'name-asc':
         // Sắp theo tên bỏ dấu: collation của Postgres xếp 'Đ' (U+0110) sau 'Z',
@@ -113,13 +131,29 @@ export class ProductRepository
     if (!product) return null;
 
     const [row] = await this.withChildren([product]);
-    return row;
+    return { ...row, categoryPath: await this.categoryPath(product.category) };
+  }
+
+  // Tổ tiên của category (gốc -> lá) cho breadcrumb trang chi tiết. Cây nông (<= vài cấp) nên đi
+  // ngược từng bước; có giới hạn để không lặp vô hạn nếu dữ liệu parent_id bị vòng.
+  private async categoryPath(category: Category): Promise<Category[]> {
+    const path = [category];
+    const repo = this.repository.manager.getRepository(Category);
+    let current = category;
+    for (let depth = 0; current.parentId && depth < 6; depth++) {
+      const parent = await repo.findOneBy({ id: current.parentId });
+      if (!parent) break;
+      path.unshift(parent);
+      current = parent;
+    }
+    return path;
   }
 
   private publicQuery(): SelectQueryBuilder<Product> {
     return this.repository
       .createQueryBuilder('product')
       .innerJoinAndSelect('product.category', 'category')
+      .leftJoinAndSelect('product.brand', 'brand')
       .where('product.status = :status', { status: PUBLIC_STATUS })
       .andWhere('category.status = :status');
   }

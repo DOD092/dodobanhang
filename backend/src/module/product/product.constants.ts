@@ -8,6 +8,7 @@ export const PRODUCT_SORTS = [
   'price-asc',
   'price-desc',
   'name-asc',
+  'popular', // bán chạy: sold_count giảm dần
 ] as const;
 
 export type ProductSort = (typeof PRODUCT_SORTS)[number];
