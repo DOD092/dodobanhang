@@ -24,8 +24,8 @@ import { PUBLIC_STATUS } from './product.constants';
 const MIN_PRICE_SQL =
   '(SELECT MIN(v.price) FROM product_variants v WHERE v.product_id = product.id)';
 
-// Chuỗi để tìm từ khoá: tên + mô tả ngắn + mô tả + mọi SKU của sản phẩm
-const SEARCH_HAYSTACK_SQL = `concat_ws(' ', product.name, product.short_description, product.description,
+// Chuỗi để tìm từ khoá: tên + tác giả + mô tả ngắn + mô tả + mọi SKU của sản phẩm
+const SEARCH_HAYSTACK_SQL = `concat_ws(' ', product.name, product.author, product.short_description, product.description,
   (SELECT string_agg(v.sku, ' ') FROM product_variants v WHERE v.product_id = product.id))`;
 
 @Injectable()

@@ -608,3 +608,4 @@ python -m tiki_crawler search "pin năng lượng mặt trời" --pages 2 --deta
   `TIKI_CATEGORY_SKIP`=1 cấp đầu như "Nhà Sách Tiki", giữ `TIKI_CATEGORY_DEPTH`=2 cấp), ảnh nhóm = ảnh sản
   phẩm đầu tiên; nạp tác giả, sao, đánh giá, đã bán, thông số, giá niêm yết làm giá gốc. `map` = cách cũ
   (5 nhóm). Test: 40 sách + 78 đèn/pin → +22 category, +118 product; "Sách tiếng Việt" 39 sp (gộp 2 cấp).
+- Tìm kiếm (`q`) tìm cả trong `author` (vd "morgan housel" ra "Tâm Lý Học Về Tiền").
