@@ -23,5 +23,13 @@ lerna-debug.log*
 .temp
 .tmp
 
-# Ban sao .env dat nham ten - chua mat khau DB va JWT_SECRET
-requirements.txt
+# requirements.txt: truoc day la ban sao .env dat nham ten (chua tung commit).
+# Nay la dependency that cua tiki_crawler -> duoc commit. KHONG de secret trong file nay.
+
+# Python (tiki_crawler)
+__pycache__/
+*.pyc
+.venv/
+
+# Output crawl Tiki (python -m tiki_crawler ...), khong commit du lieu crawl
+/data/
