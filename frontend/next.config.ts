@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
         port: apiOrigin.port,
         pathname: '/uploads/**',
       },
+      // Ảnh sản phẩm giả lập crawl từ Tiki (backend SEED_TIKI, backend.md mục 7.7): URL tuyệt đối
+      // trên CDN của Tiki. Chỉ dùng cho dữ liệu test; bỏ khi không còn sản phẩm Tiki trong DB.
+      { protocol: 'https', hostname: 'salt.tikicdn.com', pathname: '/**' },
     ],
     // Khi dev, backend ở localhost: bộ tối ưu ảnh của Next 16 mặc định chặn IP nội bộ (chống SSRF).
     // Chỉ mở ở development; production thì backend phải có domain/IP công khai.
