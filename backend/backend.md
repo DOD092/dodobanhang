@@ -609,3 +609,33 @@ python -m tiki_crawler search "pin năng lượng mặt trời" --pages 2 --deta
   phẩm đầu tiên; nạp tác giả, sao, đánh giá, đã bán, thông số, giá niêm yết làm giá gốc. `map` = cách cũ
   (5 nhóm). Test: 40 sách + 78 đèn/pin → +22 category, +118 product; "Sách tiếng Việt" 39 sp (gộp 2 cấp).
 - Tìm kiếm (`q`) tìm cả trong `author` (vd "morgan housel" ra "Tâm Lý Học Về Tiền").
+
+### 7.9. Giỏ hàng của khách đăng nhập — `/api/cart/me` (25/11/2026)
+
+Khác `CartController` (`/api/carts`, CRUD thô theo ERD, chưa phân quyền). Toàn bộ `/api/cart/me` có
+`@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles('CUSTOMER')`: thiếu/hết hạn token → 401, admin / nhân viên
+kho → 403. `userId` lấy từ JWT (`req.user.id`), **không nhận từ client**.
+
+| Endpoint | Body | Ghi chú |
+| --- | --- | --- |
+| `GET /api/cart/me` | | Chưa có giỏ → `{ cartId: null, items: [], totalQuantity: 0, totalAmount: 0 }` |
+| `POST /api/cart/me/items` | `{ variantId, quantity }` (1-99) | Chưa có giỏ `ACTIVE` thì tạo; đã có dòng cùng biến thể thì **cộng dồn**, vượt 99 → 400. Sản phẩm không `ACTIVE` → 404, giá `null` ("Liên hệ") → 400 |
+| `PATCH /api/cart/me/items/:itemId` | `{ quantity }` (1-99) | **Đặt lại** số lượng (không cộng dồn) |
+| `DELETE /api/cart/me/items/:itemId` | | Xoá dòng |
+
+- Mọi endpoint trả lại cả giỏ (`MyCartDto`: `items[{ id, variantId, productName, productSlug, variantName,
+  image, unitPrice, quantity }]`, `totalQuantity`, `totalAmount`) → frontend cập nhật luôn, không gọi lại `GET`.
+- `unit_price` lấy từ `product_variants.price` trong DB lúc thêm, client không gửi giá.
+- PATCH/DELETE chỉ tìm dòng nằm trong giỏ `ACTIVE` **của chính người gọi**; dòng của người khác → 404 (không
+  lộ dòng đó có tồn tại). `itemId` không phải uuid → 400.
+- Code: `module/cart/my-cart.{controller,service}.ts`, token `MY_CART_SERVICE` → `IMyCartService`
+  (`interface/my-cart-service.interface.ts`), DTO `add-to-cart.dto.ts` (`MAX_CART_QUANTITY = 99`),
+  `update-cart-item.dto.ts`. Thêm hàng chạy trong `UnitOfWork`; đọc giỏ dùng `DataSource` (không transaction).
+- Không đổi schema (dùng bảng `carts`, `cart_items` có sẵn).
+- Đã kiểm thử trên Postgres local (Docker): thêm 7/7, sửa/xoá 8/8 trường hợp (401, cộng dồn, vượt 99, gửi kèm giá bị
+  từ chối, 0/100 → 400, người khác sửa/xoá → 404, xoá 2 lần → 404).
+- **Thêm cùng lúc** (bấm 2 lần, 2 tab): `addItem` mở đầu transaction bằng
+  `pg_advisory_xact_lock(hashtext('cart:add-item'), hashtext(userId))` → các lần thêm của **cùng 1 user** chạy
+  lần lượt, user khác không chờ; khoá tự nhả khi transaction xong. Không khoá thì 10 request đồng thời tạo
+  **2 giỏ ACTIVE và mất số lượng** (còn 7/10, mọi request vẫn 201). Có khoá: 1 giỏ, đủ 10; 5 request ×30 vào
+  dòng đang 10 → 2 thành công (70), 3 bị 400. Không cần UNIQUE mới (không đổi schema Aiven).

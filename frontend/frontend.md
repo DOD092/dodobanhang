@@ -268,7 +268,7 @@ Lưu ý:
 | Backend | NestJS ở `../backend/`, cổng **3000**, prefix `/api`. Tài liệu: `../backend/backend.md` mục 7 |
 | Frontend | cổng **3001** (`npm run dev`) |
 | Cấu hình | `.env.local` (copy `.env.example`): `NEXT_PUBLIC_API_URL=http://localhost:3000/api`. Nhúng lúc build, đổi thì chạy lại dev/build |
-| Đã nối | sản phẩm, nhóm sản phẩm, form liên hệ, đăng ký / xác thực email / đăng nhập (18/11/2026) |
+| Đã nối | sản phẩm, nhóm sản phẩm, form liên hệ, đăng ký / xác thực email / đăng nhập (18/11/2026), giỏ hàng (25/11/2026, mục "Giỏ hàng") |
 | Vẫn hardcode | dịch vụ (`serviceData.ts`), đánh giá trang chủ (`reviewData.ts`; bảng `reviews` của backend gắn với đơn hàng nên không dùng được), `domainData.ts`, `config/home.ts` |
 
 - **Response backend luôn bọc** `{ data, isSuccess, message, statusCode, timestamp }`; `apiRequest()` trong `apis/client.ts` bóc `data`, lỗi thì ném `ApiError(status, message)`.
@@ -290,10 +290,28 @@ Bố cục theo mẫu sàn TMĐT (chủ dự án gửi ảnh), màu vẫn theo t
 
 - **Thẻ sản phẩm** (`ProductCard`): ảnh vuông, nhãn -%, giá đỏ (`red-600`) + giá gốc, tác giả/thương hiệu chữ hoa xám ("Chưa phân loại" thì ẩn), tên 2 dòng, `StarRating` + "Đã bán 29,2k" (`formatSold`). Cả thẻ là 1 link. Giá null = "Liên hệ".
 - **Biến thể + số lượng**: `components/product/purchase/` - `PurchaseProvider` (context, mặc định biến thể rẻ nhất), `PriceAndVariants` (cột giữa), `BuyBox` (cột phải). 2 khối ở 2 cột grid nên dùng chung context.
-- **"Mua ngay" / "Thêm vào giỏ" chưa đặt hàng được**: backend chưa có giỏ hàng/đặt hàng cho khách (API cart/order là CRUD thô chưa phân quyền) → bấm chỉ hiện "Đặt hàng online đang được hoàn thiện" + link `/contact`.
+- **"Thêm vào giỏ" / "Mua ngay"** (25/11/2026): cả hai thêm vào giỏ qua `POST /api/cart/me/items`; chưa đăng nhập thì BuyBox hiện khung "Đăng nhập / Đăng ký" thay cho nút. Chưa có API đặt hàng nên "Mua ngay" chưa thanh toán được. Chi tiết: mục "Giỏ hàng".
 - **Danh mục**: `types/Category.ts` thêm `parentId`, `imageUrl`, `CategoryNode`; `utils/categoryTree.ts` (`buildCategoryTree`, `findCategoryPath`). `productCount` từ backend đã gộp nhóm con. Trang chủ chỉ hiện nhóm gốc có sản phẩm.
 - **Query**: thêm `rating` (`?rating=4` → `minRating`), sort `popular` ("Bán chạy", **mặc định**), `PRODUCTS_PAGE_SIZE` = 24. Tìm kiếm khớp cả tác giả.
 - Đã xem thật (backend + DB tạm có 131 sản phẩm): `/products?category=sach-tieng-viet` desktop 1440 và mobile 500, trang chi tiết sách.
+
+## Giỏ hàng (25/11/2026)
+
+Nối `GET /api/cart/me`, `POST /api/cart/me/items`, `PATCH|DELETE /api/cart/me/items/:itemId` (`../backend/backend.md` mục 7.9). Chỉ tài khoản `CUSTOMER` có giỏ.
+
+| File | Vai trò |
+|---|---|
+| `features/cart/cartAPI.ts` | `getMyCart`, `addToCart`, `updateCartItem`, `removeCartItem` (Bearer token), type `MyCart` |
+| `features/cart/CartProvider.tsx` | `useCart()` → `{ cart, count, setCart, refreshCart }`; nằm **trong** `AuthProvider` (root layout). Tải lại khi đăng nhập / đăng xuất / đổi tài khoản; không phải `CUSTOMER` hoặc lỗi → `cart = null` |
+| `components/layouts/header/Header.tsx` | Nút giỏ (`CartIcon`) cạnh "Tài khoản", badge `bg-brand-coral` = `count` (> 99 → "99+") |
+| `components/product/purchase/BuyBox.tsx` | Chưa đăng nhập → link `/login?next=<trang hiện tại>&reason=cart`. Thêm xong `setCart(response)` → badge cập nhật ngay. 401 → `logout()`, 403 → báo tài khoản không phải khách hàng |
+| `app/cart/page.tsx` | Chưa đăng nhập → yêu cầu đăng nhập (`reason=cart-view`, quay lại `/cart`). Giỏ trống → "Tiếp tục mua sắm". Có hàng → danh sách + khung tạm tính, nút "Thanh toán" tắt (chưa có API đặt hàng) |
+| `components/cart/CartItemRow.tsx` | 1 dòng: − / ô số / + (1-99, ô số lưu khi rời ô hoặc Enter), "Xóa" (có `confirm`). Gọi API rồi `setCart(response)`; đang lưu thì khoá dòng; lỗi → hiện câu báo + trả số cũ |
+
+- **Ngoại lệ quy tắc "dữ liệu trang = Server Component"**: giỏ hàng tải ở client (`CartProvider` + `useEffect`) vì JWT nằm trong `localStorage`, server không đọc được. Khi chuyển token sang cookie httpOnly thì có thể đổi `/cart` sang Server Component.
+- Tổng tiền, số lượng luôn lấy từ response backend (không tự cộng ở client); giá do backend lấy từ DB.
+- `?next=` sau đăng nhập / đăng ký Google đi qua `utils/safeRedirect.ts` (chặn `//`, `/\`, URL ngoài → mặc định `/account`). `login/page.tsx` đọc `reason` để hiện lời nhắc ("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng."...).
+- Đã test API trên DB local; giao diện khi đã đăng nhập chưa chụp màn hình.
 
 ## Đăng ký / đăng nhập (18/11/2026)
 

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -13,11 +14,12 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { MY_CART_SERVICE } from '../../common/dependency-injection/service.tokens';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { AuthenticatedUser } from '../auth/interface/jwt-payload.interface';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateMyCartItemDto } from './dto/update-cart-item.dto';
-import { MyCartService } from './my-cart.service';
+import { IMyCartService } from './interface/my-cart-service.interface';
 
 // Giỏ hàng của CHÍNH người đang đăng nhập: userId lấy từ JWT (req.user), không nhận từ client.
 // Thiếu/sai/hết hạn token -> 401 "Vui lòng đăng nhập để tiếp tục." (JwtAuthGuard)
@@ -27,7 +29,9 @@ import { MyCartService } from './my-cart.service';
 @Roles('CUSTOMER')
 @Controller('cart/me')
 export class MyCartController {
-  constructor(private readonly myCartService: MyCartService) {}
+  constructor(
+    @Inject(MY_CART_SERVICE) private readonly myCartService: IMyCartService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Xem giỏ hàng của tôi' })

@@ -11,25 +11,16 @@ import { ProductVariant } from '../product-variant/entities/product-variant.enti
 import { PUBLIC_STATUS } from '../product/product.constants';
 import { AddToCartDto, MAX_CART_QUANTITY } from './dto/add-to-cart.dto';
 import { Cart } from './entities/cart.entity';
+import {
+  IMyCartService,
+  MyCartDto,
+} from './interface/my-cart-service.interface';
 
-export interface MyCartDto {
-  cartId: string | null;
-  items: {
-    id: string;
-    variantId: string;
-    productName: string;
-    productSlug: string;
-    variantName: string;
-    image: string | null;
-    unitPrice: number;
-    quantity: number;
-  }[];
-  totalQuantity: number;
-  totalAmount: number;
-}
+// Khoá cấp 1 của pg_advisory_xact_lock(int, int): tách khỏi các khoá advisory khác (nếu sau này có)
+const CART_LOCK_NAMESPACE = 'cart:add-item';
 
 @Injectable()
-export class MyCartService {
+export class MyCartService implements IMyCartService {
   constructor(
     private readonly unitOfWork: UnitOfWork,
     // Đọc giỏ (không cần transaction); TypeOrmModule cung cấp DataSource toàn app
@@ -38,6 +29,14 @@ export class MyCartService {
 
   async addItem(userId: string, dto: AddToCartDto): Promise<MyCartDto> {
     await this.unitOfWork.execute(async (manager) => {
+      // Xếp hàng các lần thêm của CÙNG 1 user (bấm 2 lần / 2 tab cùng lúc). Không khoá thì 2 request
+      // cùng thấy "chưa có giỏ / chưa có dòng" -> tạo 2 giỏ ACTIVE, hoặc INSERT trùng UNIQUE(cart, variant)
+      // -> lỗi. Khoá tự nhả khi transaction kết thúc; user khác không bị chờ. Không cần đổi schema.
+      await manager.query(
+        'SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))',
+        [CART_LOCK_NAMESPACE, userId],
+      );
+
       const variant = await manager.getRepository(ProductVariant).findOne({
         where: { id: dto.variantId },
         relations: { product: true },

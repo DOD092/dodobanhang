@@ -6,6 +6,8 @@ export const AUTH_SERVICE = Symbol('AUTH_SERVICE');
 export const ADMIN_SERVICE = Symbol('ADMIN_SERVICE');
 export const BRAND_SERVICE = Symbol('BRAND_SERVICE');
 export const CART_SERVICE = Symbol('CART_SERVICE');
+// Giỏ của người đang đăng nhập (/api/cart/me), khác CART_SERVICE (CRUD thô)
+export const MY_CART_SERVICE = Symbol('MY_CART_SERVICE');
 export const CART_ITEM_SERVICE = Symbol('CART_ITEM_SERVICE');
 export const CATEGORY_SERVICE = Symbol('CATEGORY_SERVICE');
 export const CUSTOMER_SERVICE = Symbol('CUSTOMER_SERVICE');

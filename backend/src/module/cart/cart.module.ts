@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CART_REPOSITORY } from '../../common/dependency-injection/repository.tokens';
-import { CART_SERVICE } from '../../common/dependency-injection/service.tokens';
+import {
+  CART_SERVICE,
+  MY_CART_SERVICE,
+} from '../../common/dependency-injection/service.tokens';
 import { Cart } from './entities/cart.entity';
 import { CartController } from './cart.controller';
 import { CartRepository } from './cart.repository';
@@ -16,8 +19,8 @@ import { MyCartService } from './my-cart.service';
   providers: [
     { provide: CART_SERVICE, useClass: CartService },
     { provide: CART_REPOSITORY, useClass: CartRepository },
-    MyCartService,
+    { provide: MY_CART_SERVICE, useClass: MyCartService },
   ],
-  exports: [CART_SERVICE, MyCartService],
+  exports: [CART_SERVICE, MY_CART_SERVICE],
 })
 export class CartModule {}
