@@ -40,7 +40,13 @@ declare global {
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
-export default function GoogleLoginButton({ mode = 'signin' }: { mode?: 'signin' | 'signup' }) {
+export default function GoogleLoginButton({
+  mode = 'signin',
+  next = '/account',
+}: {
+  mode?: 'signin' | 'signup'
+  next?: string // đăng nhập xong chuyển tới đây (đã lọc bằng safeRedirect)
+}) {
   const router = useRouter()
   const { loginWithGoogle } = useAuth()
   const containerRef = useRef<HTMLDivElement>(null)
@@ -55,7 +61,7 @@ export default function GoogleLoginButton({ mode = 'signin' }: { mode?: 'signin'
     setBusy(true)
     try {
       await loginWithGoogle(credential)
-      router.push('/account')
+      router.push(next)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Không kết nối được máy chủ')
       setBusy(false)

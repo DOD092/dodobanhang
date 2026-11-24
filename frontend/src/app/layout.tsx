@@ -7,6 +7,7 @@ import Header from '@/components/layouts/header/Header'
 import { siteConfig } from '@/config/site'
 
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { CartProvider } from '@/features/cart/CartProvider'
 
 import './globals.css'
 
@@ -22,10 +23,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi">
       <body className={`${notoSans.className} flex min-h-screen flex-col`}>
         <AuthProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <BackToTop />
+          {/* CartProvider cần token nên nằm trong AuthProvider */}
+          <CartProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <BackToTop />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

@@ -12,10 +12,15 @@ import { type LoginInput, loginSchema } from '@/features/auth/authSchema'
 
 interface LoginFormProps {
   defaultEmail?: string // điền sẵn (vd vừa xác thực email xong)
-  notice?: string // thông báo thành công từ bước trước (xác thực email, đặt lại mật khẩu)
+  notice?: string // thông báo từ bước trước (xác thực email, đặt lại mật khẩu, cần đăng nhập để mua)
+  next?: string // đăng nhập xong chuyển tới đây (đã lọc bằng safeRedirect ở trang /login)
 }
 
-export default function LoginForm({ defaultEmail = '', notice }: LoginFormProps) {
+export default function LoginForm({
+  defaultEmail = '',
+  notice,
+  next = '/account',
+}: LoginFormProps) {
   const router = useRouter()
   const { login } = useAuth()
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +33,7 @@ export default function LoginForm({ defaultEmail = '', notice }: LoginFormProps)
     setError(null)
     try {
       await login(values)
-      router.push('/account')
+      router.push(next)
     } catch (e) {
       // 403 "chưa xác thực" -> chuyển sang trang nhập mã (from=login: mã cũ có thể đã hết hạn)
       if (e instanceof ApiError && e.status === 403 && e.message.includes('xác thực')) {

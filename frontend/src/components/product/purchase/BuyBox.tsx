@@ -1,21 +1,78 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import { ApiError } from '@/apis/client'
+import { useAuth } from '@/features/auth/AuthProvider'
+import { addToCart } from '@/features/cart/cartAPI'
+import { useCart } from '@/features/cart/CartProvider'
 import { formatPrice } from '@/utils/formatPrice'
 
 import { MAX_QUANTITY, usePurchase } from './PurchaseContext'
 
 /*
   Khung mua hàng bên phải (dính khi cuộn): số lượng, tạm tính, "Mua ngay" / "Thêm vào giỏ".
-  Backend CHƯA có giỏ hàng / đặt hàng cho khách (API cart/order hiện là CRUD thô, chưa có
-  phân quyền - xem backend.md mục 6) -> 2 nút chỉ báo đang phát triển và dẫn sang trang liên hệ.
+  - Thêm vào giỏ: POST /api/cart/me/items { variantId, quantity } (Bearer token). BẮT BUỘC đăng nhập:
+    chưa đăng nhập thì KHÔNG gọi API, hiện yêu cầu đăng nhập + nút sang /login?next=<trang này>.
+  - 401 (token hết hạn) -> đăng xuất, hiện yêu cầu đăng nhập lại.
+  - Mua ngay: thêm vào giỏ như trên; trang giỏ hàng / thanh toán chưa có nên chỉ báo đã thêm.
 */
+type Status =
+  | { kind: 'success'; text: string }
+  | { kind: 'error'; text: string }
+  | { kind: 'login'; text: string }
+
 export default function BuyBox() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const { user, token, loading, logout } = useAuth()
   const { selected, quantity, setQuantity } = usePurchase()
-  const [notice, setNotice] = useState(false)
+  const { setCart } = useCart()
+  const [status, setStatus] = useState<Status | null>(null)
+  const [adding, setAdding] = useState(false)
   const price = selected?.price ?? null
+
+  // Đăng nhập xong quay lại đúng trang sản phẩm này (trang /login đọc ?next=)
+  const loginHref = `/login?next=${encodeURIComponent(pathname)}&reason=cart`
+
+  const handleAdd = async (buyNow: boolean) => {
+    if (loading || adding || !selected) return
+    if (!user || !token) {
+      setStatus({ kind: 'login', text: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.' })
+      return
+    }
+
+    setAdding(true)
+    setStatus(null)
+    try {
+      const cart = await addToCart(token, selected.id, quantity)
+      setCart(cart) // số trên nút giỏ ở header cập nhật ngay
+      setStatus({
+        kind: 'success',
+        text: buyNow
+          ? `Đã thêm vào giỏ (${cart.totalQuantity} sản phẩm). Trang thanh toán đang được hoàn thiện.`
+          : `Đã thêm vào giỏ hàng. Giỏ hàng có ${cart.totalQuantity} sản phẩm.`,
+      })
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        logout()
+        setStatus({ kind: 'login', text: 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.' })
+        return
+      }
+      if (e instanceof ApiError && e.status === 403) {
+        setStatus({ kind: 'error', text: 'Chỉ tài khoản khách hàng mới dùng được giỏ hàng.' })
+        return
+      }
+      setStatus({
+        kind: 'error',
+        text: e instanceof ApiError ? e.message : 'Không kết nối được máy chủ',
+      })
+    } finally {
+      setAdding(false)
+    }
+  }
 
   if (price === null) {
     return (
@@ -75,30 +132,55 @@ export default function BuyBox() {
       <div className="space-y-2">
         <button
           type="button"
-          onClick={() => setNotice(true)}
+          onClick={() => handleAdd(true)}
+          disabled={adding || loading}
           className="btn w-full rounded-lg bg-red-600 py-3 text-white hover:bg-red-700"
         >
           Mua ngay
         </button>
         <button
           type="button"
-          onClick={() => setNotice(true)}
+          onClick={() => handleAdd(false)}
+          disabled={adding || loading}
           className="btn btn-outline-primary w-full rounded-lg py-3"
         >
-          Thêm vào giỏ
+          {adding ? 'Đang thêm...' : 'Thêm vào giỏ'}
         </button>
       </div>
 
-      {notice && (
-        <p
-          role="status"
-          className="mb-0 rounded-lg bg-brand-primary-light px-3 py-2 text-sm text-brand-primary"
+      {status?.kind === 'login' && (
+        <div
+          role="alert"
+          className="space-y-2 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900"
         >
-          Đặt hàng online đang được hoàn thiện.{' '}
-          <Link href="/contact" className="font-semibold underline">
-            Liên hệ để đặt mua
-          </Link>
-          .
+          <p className="mb-0">{status.text}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => router.push(loginHref)}
+              className="btn btn-primary rounded-lg px-4 py-1.5 text-sm"
+            >
+              Đăng nhập
+            </button>
+            <Link
+              href={`/register?next=${encodeURIComponent(pathname)}`}
+              className="btn btn-outline-primary rounded-lg px-4 py-1.5 text-sm"
+            >
+              Đăng ký
+            </Link>
+          </div>
+        </div>
+      )}
+      {status && status.kind !== 'login' && (
+        <p
+          role={status.kind === 'success' ? 'status' : 'alert'}
+          className={`mb-0 rounded-lg px-3 py-2 text-sm ${
+            status.kind === 'success'
+              ? 'bg-brand-primary-light text-brand-primary'
+              : 'bg-red-50 text-red-800'
+          }`}
+        >
+          {status.text}
         </p>
       )}
     </div>
