@@ -1,23 +1,33 @@
 # dodobanhang — tổng quan repo
 
-Monorepo gồm 2 project độc lập, mỗi project có `package.json` riêng. **Chạy `npm` bên trong từng
-folder**, không chạy ở gốc repo (gốc không có `package.json`).
+Monorepo 2 project độc lập, mỗi project có `package.json` riêng. **Chạy `npm` trong từng folder**
+(gốc repo không có `package.json`).
 
-| Folder | Stack | Tài liệu chi tiết |
+| Folder | Stack | Tài liệu gốc (lớn, chỉ đọc mục cần) |
 | --- | --- | --- |
-| `backend/` | NestJS 10 + TypeORM 0.3 + PostgreSQL (Aiven) | [backend/backend.md](backend/backend.md) |
-| `frontend/` | Next.js 16 (App Router) + React 19 + Tailwind 4 | [frontend/frontend.md](frontend/frontend.md) (+ [frontend/AGENTS.md](frontend/AGENTS.md)) |
+| `backend/` | NestJS 10 + TypeORM 0.3 + PostgreSQL (Aiven, dùng chung cả nhóm) | `backend/backend.md` |
+| `frontend/` | Next.js 16 (App Router) + React 19 + Tailwind 4 | `frontend/frontend.md` (+ `frontend/AGENTS.md`: không sửa/xoá) |
 
-**Trước khi sửa code trong folder nào, đọc tài liệu của folder đó.** Hai file trên không tên là
-`CLAUDE.md` nên không tự được nạp; file này là điểm vào duy nhất.
+## Cách lấy context (tiết kiệm token)
 
-- Làm ở `frontend/`: đọc `frontend/frontend.md` **và** `frontend/AGENTS.md` (quy tắc Next.js 16 do
-  `next dev` quản lý: không sửa, không xóa file này).
-- Làm ở `backend/`: đọc `backend/backend.md` (quy ước entity/module, FK, sự cố `synchronize`).
+Quy ước đã được tách thành skill trong `.claude/skills/`, tự nạp theo việc đang làm:
 
-## Ghép frontend ↔ backend (đã nối 17/11/2026)
+| Skill | Khi nào |
+| --- | --- |
+| `backend-module` | entity, module, controller, DTO, FK, UnitOfWork |
+| `db-safety` | đổi cột/bảng, seed, boot vào Aiven, lỗi "Unable to connect" |
+| `frontend-feature` | trang, component, form, routing, Server/Client Component |
+| `brand-ui` | màu, Tailwind, layout, card, header/banner |
+| `api-connect` | gọi endpoint backend từ frontend, thêm endpoint mới, giỏ hàng |
+| `auth-flow` | đăng ký/đăng nhập/Google/JWT/hồ sơ |
+| `run-dev` | chạy, build, kiểm thử app |
 
-Chạy cả hai cùng lúc (2 terminal):
+- **Không đọc cả `backend.md` / `frontend.md`.** Khi skill không đủ: Grep tiêu đề (`^## `, `^### `) hoặc
+  tên component trong file đó, rồi Read đúng khoảng dòng.
+- Tìm kiếm rộng nhiều file: dùng agent `Explore` để kết quả thô không chiếm context chính.
+- Sau khi đổi quy ước/endpoint: cập nhật mục tương ứng trong tài liệu gốc, và skill nếu quy tắc đổi.
+
+## Ghép frontend ↔ backend
 
 ```bash
 cd backend  && npm run start:dev   # http://localhost:3000/api  (Swagger: /swagger/index.html)
@@ -26,25 +36,19 @@ cd frontend && npm run dev         # http://localhost:3001
 
 | | Quyết định |
 | --- | --- |
-| Cổng | Backend **3000** (giữ nguyên vì `GOOGLE_CALLBACK_URL` đã đăng ký với Google), frontend **3001** |
+| Cổng | Backend **3000** (cố định vì `GOOGLE_CALLBACK_URL`), frontend **3001** |
 | Cấu hình frontend | `frontend/.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:3000/api` |
-| URL sản phẩm | `/products/<slug>` (slug trong DB), lọc nhóm `?category=<slug>` |
+| URL sản phẩm | `/products/<slug>`, lọc `?category=<slug>` |
 | Giá "Liên hệ" | `product_variants.price` nullable, `null` = "Liên hệ" |
-| Đã nối | sản phẩm, nhóm sản phẩm (`/api/products/search`, `/api/products/slug/:slug`, `/api/categories/public`), form liên hệ (`POST /api/contacts`, gửi email, không lưu DB), đăng ký / xác thực email / đăng nhập (`/api/auth/*`, 18/11/2026) |
-| Đăng nhập trên web | Email/mật khẩu + **Google** (`POST /api/auth/google`, nút Google Identity Services; cần `NEXT_PUBLIC_GOOGLE_CLIENT_ID` = `GOOGLE_CLIENT_ID` backend và origin `http://localhost:3001` trong Google Console). JWT lưu `localStorage`, `AuthProvider` bọc toàn site (`frontend/src/features/auth/`); trang `/register`, `/verify-email`, `/login`, `/account` |
-| Thương hiệu | **dodobanhang** (con dodo). Màu theo bộ nhận diện (19/11/2026): xanh cổ vịt `#0F3D3E` (chính), vàng `#FFD66B` (nhấn), cam `#FF6B4A`, kem `#FFF8EC`. Header: logo + Menu + nút vàng "Tài khoản" (bỏ tìm kiếm, SĐT). Ảnh hero/banner bản "Mua sắm cùng dodo. Đặt hàng ngay." (nút → `/products`). Chi tiết: `frontend/frontend.md` mục "Styling" và "Layout đã dựng" |
+| Đã nối | sản phẩm, danh mục, liên hệ, auth (email + Google), hồ sơ, giỏ hàng (`/api/cart/me`) |
 | Vẫn hardcode ở frontend | dịch vụ, đánh giá trang chủ |
-| Dữ liệu ban đầu | `SEED_CATALOG=true` trong `backend/.env` → nạp 5 nhóm + 13 sản phẩm thật (1 lần) |
+| Thương hiệu | **dodobanhang** (con dodo): `#0F3D3E` chính, `#FFD66B` nhấn, `#FF6B4A` cam, `#FFF8EC` kem |
 
-Chi tiết: `backend/backend.md` mục 7 (auth: 7.6), `frontend/frontend.md` mục "Nối backend" và "Đăng ký / đăng nhập".
-
-⚠️ **Trước khi bật `SEED_CATALOG=true` trên Aiven**, phải báo cả nhóm và merge thay đổi
-`price` nullable lên `dev`. Nếu không, nhánh nào còn `price` NOT NULL sẽ không boot được
-(`backend/backend.md` mục 5.1 và 7.4).
+⚠️ **DB Aiven dùng chung + `synchronize: true`**: sửa entity là sửa schema của cả nhóm. Trước khi
+bật `SEED_CATALOG=true` trên Aiven phải báo nhóm và merge `price` nullable lên `dev`. `SEED_TIKI` chỉ
+dùng DB local/test. Chi tiết: skill `db-safety`.
 
 ## Git
 
-- Mỗi project có `.gitignore` riêng (`backend/.gitignore`, `frontend/.gitignore`); `.gitignore` ở
-  gốc repo chỉ chặn `/node_modules` của gốc. Không commit `node_modules/`, `.next/`, `.env*`.
-- File trong `frontend/` đang là CRLF; Prettier đổi sang LF → chỉ format file mình sửa
-  (xem `frontend/frontend.md`, mục "Quy ước code").
+- `.gitignore` riêng cho từng project. Không commit `node_modules/`, `.next/`, `.env*`.
+- File trong `frontend/` là CRLF; Prettier đổi sang LF → chỉ format file mình sửa.
