@@ -4,10 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
-import { CartIcon, MenuIcon, XIcon } from '@/components/common/Icons'
+import { MenuIcon, XIcon } from '@/components/common/Icons'
 import { useAuth } from '@/features/auth/AuthProvider'
-import { useCart } from '@/features/cart/CartProvider'
 
+import CartMenu from './CartMenu'
 import Logo from './Logo'
 import NavLinks from './NavLinks'
 
@@ -23,7 +23,6 @@ import NavLinks from './NavLinks'
 export default function Header() {
   const pathname = usePathname()
   const { user, loading } = useAuth()
-  const { count } = useCart()
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Đổi trang thì đóng menu mobile
@@ -41,19 +40,8 @@ export default function Header() {
             {/* Chưa đăng nhập -> /login, đã đăng nhập -> /account. Chờ AuthProvider kiểm tra token
                 xong mới hiện để link không đổi đích giữa chừng. */}
             {/* Giỏ hàng: luôn hiện; chưa đăng nhập thì trang /cart tự yêu cầu đăng nhập.
-                Số trên góc = tổng số lượng (CartProvider), > 99 hiện "99+". */}
-            <Link
-              href="/cart"
-              aria-label={count > 0 ? `Giỏ hàng (${count} sản phẩm)` : 'Giỏ hàng'}
-              className="relative flex size-10 items-center justify-center rounded-full text-brand-primary transition-colors hover:bg-brand-primary-light"
-            >
-              <CartIcon className="size-6" />
-              {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-coral px-1 text-[11px] leading-none font-bold text-white">
-                  {count > 99 ? '99+' : count}
-                </span>
-              )}
-            </Link>
+                Rê chuột vào thì hiện khung xem nhanh sản phẩm trong giỏ (CartMenu). */}
+            <CartMenu />
             {!loading && (
               <Link
                 href={user ? '/account' : '/login'}

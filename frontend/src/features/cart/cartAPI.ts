@@ -8,6 +8,7 @@ export interface MyCart {
     productName: string
     productSlug: string
     variantName: string
+    image: string | null // ảnh của biến thể, không có thì ảnh chính của sản phẩm
     unitPrice: number
     quantity: number
   }[]

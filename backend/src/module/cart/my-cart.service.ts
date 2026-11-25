@@ -3,10 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, In } from 'typeorm';
 import { CartStatus } from '../../common/enum/cart-status.enum';
 import { UnitOfWork } from '../../common/unit-of-work/unit-of-work';
 import { CartItem } from '../cart-item/entities/cart-item.entity';
+import { ProductImage } from '../product-image/entities/product-image.entity';
 import { ProductVariant } from '../product-variant/entities/product-variant.entity';
 import { PUBLIC_STATUS } from '../product/product.constants';
 import { AddToCartDto, MAX_CART_QUANTITY } from './dto/add-to-cart.dto';
@@ -132,13 +133,28 @@ export class MyCartService implements IMyCartService {
       relations: { variant: { product: true } },
       order: { createdAt: 'ASC' },
     });
+    // Ảnh cho cả giỏ bằng 1 query (không N+1). Ưu tiên ảnh riêng của biến thể, không có thì ảnh
+    // chính của sản phẩm (cùng thứ tự với trang sản phẩm: is_primary trước, rồi sort_order).
+    const productIds = [...new Set(rows.map((row) => row.variant.productId))];
+    const images = productIds.length
+      ? await manager.getRepository(ProductImage).find({
+          where: { productId: In(productIds) },
+          order: { isPrimary: 'DESC', sortOrder: 'ASC', createdAt: 'ASC' },
+        })
+      : [];
+    const pickImage = (productId: string, variantId: string) =>
+      (
+        images.find((img) => img.variantId === variantId) ??
+        images.find((img) => img.productId === productId)
+      )?.imageUrl ?? null;
+
     const items = rows.map((row) => ({
       id: row.id,
       variantId: row.variantId,
       productName: row.variant.product.name,
       productSlug: row.variant.product.slug,
       variantName: row.variant.variantName,
-      image: null, // bước mở rộng: lấy ảnh chính từ product_images
+      image: pickImage(row.variant.productId, row.variantId),
       unitPrice: row.unitPrice,
       quantity: row.quantity,
     }));
