@@ -8,6 +8,12 @@ export const BRAND_SERVICE = Symbol('BRAND_SERVICE');
 export const CART_SERVICE = Symbol('CART_SERVICE');
 // Giỏ của người đang đăng nhập (/api/cart/me), khác CART_SERVICE (CRUD thô)
 export const MY_CART_SERVICE = Symbol('MY_CART_SERVICE');
+// Địa chỉ giao hàng của người đang đăng nhập (/api/addresses/me)
+export const MY_ADDRESS_SERVICE = Symbol('MY_ADDRESS_SERVICE');
+// Đặt hàng + xem đơn của người đang đăng nhập (/api/orders/me)
+export const MY_ORDER_SERVICE = Symbol('MY_ORDER_SERVICE');
+// Cổng thanh toán payOS (bọc SDK @payos/node), không có bảng riêng
+export const PAYOS_SERVICE = Symbol('PAYOS_SERVICE');
 export const CART_ITEM_SERVICE = Symbol('CART_ITEM_SERVICE');
 export const CATEGORY_SERVICE = Symbol('CATEGORY_SERVICE');
 export const CUSTOMER_SERVICE = Symbol('CUSTOMER_SERVICE');

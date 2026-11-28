@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
+import MyOrdersSection from '@/components/account/MyOrdersSection'
 import ProfileSection from '@/components/account/ProfileSection'
 import ChangePasswordForm from '@/components/auth/ChangePasswordForm'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -51,6 +52,14 @@ export default function AccountPage() {
         <section className="rounded-2xl border-2 border-neutral-200 p-6">
           <h2 className="mb-4 text-lg font-bold">Hồ sơ cá nhân</h2>
           <ProfileSection />
+        </section>
+      )}
+
+      {/* Đơn hàng: API /orders/me chỉ cho role CUSTOMER */}
+      {isCustomer && (
+        <section id="orders" className="scroll-mt-24 rounded-2xl border-2 border-neutral-200 p-6">
+          <h2 className="mb-4 text-lg font-bold">Đơn hàng của tôi</h2>
+          <MyOrdersSection />
         </section>
       )}
 

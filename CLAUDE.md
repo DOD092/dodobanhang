@@ -40,7 +40,7 @@ cd frontend && npm run dev         # http://localhost:3001
 | Cấu hình frontend | `frontend/.env.local`: `NEXT_PUBLIC_API_URL=http://localhost:3000/api` |
 | URL sản phẩm | `/products/<slug>`, lọc `?category=<slug>` |
 | Giá "Liên hệ" | `product_variants.price` nullable, `null` = "Liên hệ" |
-| Đã nối | sản phẩm, danh mục, liên hệ, auth (email + Google), hồ sơ, giỏ hàng (`/api/cart/me`) |
+| Đã nối | sản phẩm, danh mục, liên hệ, auth (email + Google), hồ sơ, giỏ hàng (`/api/cart/me`), địa chỉ + đặt hàng COD / payOS (`/api/addresses/me`, `/api/orders/me`, webhook `/api/payments/payos/webhook`) |
 | Vẫn hardcode ở frontend | dịch vụ, đánh giá trang chủ |
 | Thương hiệu | **dodobanhang** (con dodo): `#0F3D3E` chính, `#FFD66B` nhấn, `#FF6B4A` cam, `#FFF8EC` kem |
 

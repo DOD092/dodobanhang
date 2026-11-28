@@ -12,8 +12,7 @@ import { formatPrice } from '@/utils/formatPrice'
 /*
   Trang giỏ hàng (nút giỏ ở header). Dữ liệu: GET /api/cart/me qua CartProvider.
   Chưa đăng nhập -> yêu cầu đăng nhập (quay lại /cart sau khi đăng nhập).
-  Mỗi dòng (CartItemRow): tăng/giảm/nhập số lượng, xóa. Chưa có API đặt hàng -> nút "Thanh toán"
-  báo đang hoàn thiện.
+  Mỗi dòng (CartItemRow): tăng/giảm/nhập số lượng, xóa. Nút "Thanh toán" -> /checkout.
 */
 export default function CartPage() {
   const { user, loading } = useAuth()
@@ -80,21 +79,12 @@ export default function CartPage() {
               <p className="mb-0 text-2xl font-bold text-red-600">
                 {formatPrice(cart?.totalAmount ?? 0)}
               </p>
-              <button
-                type="button"
-                disabled
-                className="btn w-full rounded-lg bg-red-600 py-3 text-white"
-                title="Đang hoàn thiện"
+              <Link
+                href="/checkout"
+                className="btn w-full rounded-lg bg-red-600 py-3 text-white hover:bg-red-700"
               >
                 Thanh toán
-              </button>
-              <p className="mb-0 text-xs text-neutral-500">
-                Thanh toán online đang được hoàn thiện.{' '}
-                <Link href="/contact" className="text-brand-primary">
-                  Liên hệ để đặt mua
-                </Link>
-                .
-              </p>
+              </Link>
             </aside>
           </div>
         )}

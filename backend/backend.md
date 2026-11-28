@@ -639,3 +639,43 @@ kho → 403. `userId` lấy từ JWT (`req.user.id`), **không nhận từ clien
   lần lượt, user khác không chờ; khoá tự nhả khi transaction xong. Không khoá thì 10 request đồng thời tạo
   **2 giỏ ACTIVE và mất số lượng** (còn 7/10, mọi request vẫn 201). Có khoá: 1 giỏ, đủ 10; 5 request ×30 vào
   dòng đang 10 → 2 thành công (70), 3 bị 400. Không cần UNIQUE mới (không đổi schema Aiven).
+
+### 7.9. Đặt hàng (COD) + địa chỉ của tôi (28/11/2026)
+
+Cần JWT, role `CUSTOMER`, `userId` lấy từ token. Controller `My*` khai báo **trước** controller CRUD
+thô trong `controllers: [...]` để `me` không bị route `:id` (ParseUUIDPipe) bắt.
+
+| Endpoint | Ghi chú |
+| --- | --- |
+| `GET/POST /api/addresses/me` | `MyAddressService`. Địa chỉ đầu tiên tự là mặc định; chọn mặc định thì bỏ mặc định cũ; tối đa 20 |
+| `POST /api/orders/me/checkout` | `{ addressId, customerNote?, paymentMethod: 'COD' \| 'PAYOS' }` → `{ orderCode, totalAmount, paymentMethod, checkoutUrl }`. `PAYOS` → `checkoutUrl` của payOS |
+| `POST /api/orders/me/:orderCode/cancel` | Huỷ đơn `PENDING` chưa trả tiền (payOS: huỷ link trước; đã PAID → 409). Hàng **trả về giỏ** |
+| `POST /api/payments/payos/webhook` | **Công khai**, bảo vệ bằng chữ ký (`PayosWebhookController`, trong OrderModule) |
+| `GET /api/orders/me`, `GET /api/orders/me/:orderCode` | Danh sách (50 gần nhất) / chi tiết; đơn người khác → 404 |
+
+`MyOrderService.checkout` chạy trong 1 transaction, dùng **cùng advisory lock** với thêm vào giỏ
+(`CART_LOCK_NAMESPACE`): đọc lại giá + trạng thái biến thể từ DB (không dùng giá lưu trong giỏ) →
+`orders` (PENDING) + `order_items` (bản chụp tên/SKU/giá) + `payments` (PENDING) + `order_status_history`
+→ giỏ `CHECKED_OUT`. `order_code` là **chuỗi số** (`Date.now()*100 + random`) vì payOS bắt buộc
+`orderCode` là số nguyên ≤ 2^53. `orders.order_address` lưu bản chụp địa chỉ. Không đổi schema.
+
+**payOS** (`@payos/node` 2.x, cài bằng `npm i --legacy-peer-deps` vì xung đột peer có sẵn của
+`@automapper/classes`): `src/module/payos/` chỉ bọc SDK (`PAYOS_SERVICE`, khởi tạo lúc dùng lần đầu →
+máy chưa có khoá vẫn boot, chọn chuyển khoản thì 503). Env `PAYOS_CLIENT_ID/API_KEY/CHECKSUM_KEY`,
+`FRONTEND_URL`. Payment lưu `BANK_TRANSFER` + `provider = 'PAYOS'` + `expired_at` (15 phút).
+
+- Đặt hàng: transaction commit xong mới gọi `paymentRequests.create` (orderCode = số của `order_code`,
+  description `DH` + 7 số cuối ≤ 9 ký tự, returnUrl/cancelUrl = `FRONTEND_URL/checkout/result?orderCode=`
+  (+`&cancel=1`)). Lỗi → huỷ đơn vừa tạo + trả hàng về giỏ → 502.
+- Đã trả: `markPaid()` (khoá dòng order `pessimistic_write`, **idempotent**): thêm `payment_transactions`
+  (reference, code), payment `SUCCESS` + `paid_at`, order `CONFIRMED` + `payment_status SUCCESS`, history.
+  Chuyển thiếu → transaction `FAILED`, không xác nhận. Tiền tới sau khi đơn đã huỷ → giữ huỷ, ghi history
+  "cần hoàn tiền".
+- Gọi từ 2 nguồn: **webhook** (`webhooks.verify`, sai chữ ký → 400; orderCode lạ, vd request thử khi khai
+  webhook → 200) và **đối soát** trong `GET /orders/me/:orderCode` khi đơn payOS còn chờ
+  (`paymentRequests.get`: PAID → markPaid; CANCELLED/EXPIRED → huỷ + trả hàng về giỏ). Nhờ đối soát,
+  chạy local **không cần tunnel** vẫn ra đúng kết quả; webhook cần URL công khai.
+
+⚠️ CRUD thô `/api/orders`,
+`/api/payments`, `/api/payment-transactions`, `/api/addresses` vẫn công khai (ai cũng PATCH được
+payment thành SUCCESS) → phải chặn bằng guard ADMIN trước khi nhận tiền thật.

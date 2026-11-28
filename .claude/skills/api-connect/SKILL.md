@@ -35,6 +35,10 @@ page / component
 | `/auth/*`, `/customers/me/profile`, `/customers/me/avatar` | xem skill `auth-flow` |
 | `GET /cart/me`, `POST /cart/me/items`, `PATCH|DELETE /cart/me/items/:itemId` (JWT) | `features/cart/cartAPI.ts` (`getMyCart, addToCart, updateCartItem, removeCartItem`), state ở `CartProvider` |
 
+| `GET/POST /addresses/me` (JWT) | `features/address/addressAPI.ts` |
+| `POST /orders/me/checkout` (COD / PAYOS → `checkoutUrl`), `GET /orders/me`, `GET /orders/me/:orderCode` (đối soát payOS), `POST /orders/me/:orderCode/cancel` (JWT) | `features/order/orderAPI.ts` (trang `/checkout`, `/checkout/result`, `/account/orders/<mã>`) |
+| `POST /payments/payos/webhook` (payOS gọi, công khai, verify chữ ký) | — (backend.md 7.9) |
+
 Vẫn hardcode (chủ dự án chọn): dịch vụ `serviceData.ts`, đánh giá trang chủ `reviewData.ts`, `config/home.ts`.
 
 ## Thêm endpoint mới (2 phía)

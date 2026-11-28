@@ -17,8 +17,9 @@ import {
   MyCartDto,
 } from './interface/my-cart-service.interface';
 
-// Khoá cấp 1 của pg_advisory_xact_lock(int, int): tách khỏi các khoá advisory khác (nếu sau này có)
-const CART_LOCK_NAMESPACE = 'cart:add-item';
+// Khoá cấp 1 của pg_advisory_xact_lock(int, int): tách khỏi các khoá advisory khác (nếu sau này có).
+// Đặt hàng (MyOrderService.checkout) dùng CÙNG khoá này để không ai thêm hàng vào giỏ đang được chốt.
+export const CART_LOCK_NAMESPACE = 'cart:add-item';
 
 @Injectable()
 export class MyCartService implements IMyCartService {
